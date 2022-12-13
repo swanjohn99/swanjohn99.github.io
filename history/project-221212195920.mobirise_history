@@ -1,7 +1,7 @@
 {
   "settings": {
     "name": "hudson",
-    "currentPage": "leeds.html",
+    "currentPage": "venster.html",
     "versionFirst": "4.0.14",
     "uniqCompNum": 184,
     "versionPublish": "4.12.4",
@@ -523,7 +523,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
@@ -1681,7 +1681,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
@@ -2075,7 +2075,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
@@ -2848,7 +2848,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
@@ -3369,12 +3369,20 @@
             "bgColor": "#4c6972",
             "images": [
               {
+                "image": "@PROJECT_PATH@/assets/images/20221212-191407.gif",
+                "thumb": "@PROJECT_PATH@/assets/images/20221212-191407.gif",
+                "alt": "",
+                "title": "",
+                "caption": "Type caption here",
+                "active": true
+              },
+              {
                 "image": "@PROJECT_PATH@/assets/images/20221212-195603.gif",
                 "thumb": "@PROJECT_PATH@/assets/images/20221212-195603.gif",
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": false
+                "active": true
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0011-1024x768.jpg",
@@ -3398,131 +3406,27 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
+              },
+              {
+                "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0014-1-1024x768.jpg",
+                "thumb": "@PROJECT_PATH@/assets/images/img-20221211-wa0014-1-1024x768-800x600.jpg",
+                "alt": "",
+                "title": "",
+                "caption": "Type caption here",
+                "active": false
+              },
+              {
+                "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0018-1-1024x768.jpg",
+                "thumb": "@PROJECT_PATH@/assets/images/img-20221211-wa0018-1-1024x768-800x600.jpg",
+                "alt": "",
+                "title": "",
+                "caption": "Type caption here",
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0021-1-1024x768.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/img-20221211-wa0021-1-1024x768-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2775-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2775-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2776-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2776-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2782-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2782-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2784-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2784-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2785-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2785-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2786-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2786-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2788-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2788-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2789-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2789-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2790-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2790-2000x1500-800x600.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2791-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2791-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2792-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2792-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2793-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2793-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2794-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2794-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2795-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2795-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-2801-2000x1500.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-2801-2000x1500-800x600.jpg",
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
@@ -3580,7 +3484,7 @@
             "overlayOpacity": 0.2
           },
           "title": "STAY AT THE A VENSTER!&nbsp;<br><br>",
-          "text": "<p>This is a Its a 144 sqft tiny house on wheels, located in a large 8 acre, mostly wooded property. While there is a main cabin about 100 feet away, It is quite secluded and you will have your very private deck and a outdoor fireplace for making smores.&nbsp;</p><p>Book directly and save!<br></p><p><br></p>",
+          "text": "<p><a href=\"https://www.airbnb.com/rooms/25452228\" class=\"text-primary\" target=\"_blank\">Book on airbnb</a>&nbsp;( More expensive because of airbnb's cut)</p><p>Book directly and save!</p><p><br></p>",
           "button": "<a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"https://mobirise.com\">LEARN MORE</a>",
           "_tags": [
             "Theme"
@@ -3669,7 +3573,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
@@ -3863,7 +3767,7 @@
           "_anchor": "gallery2-4s"
         },
         {
-          "text": "<p><br></p><p>Leeds is a very tiny hamlet with a couple of bakeries/cafes, two bars and two restaurants. Located two miles from the I-87. One of the best swimming holes of the area, marble rocks, is located in Leeds. Our location is very close this charming little town.</p>",
+          "text": "<p><br></p><p>Palenville, USA's original art colony, is a tiny hamlet at the start of the scenic route to Hunter mountain. It is connected to New York by a Trailways bus. Walk to Cafes, Grocery, Restaurants, Hiking Trails and Swimming holes or borrow our bikes to explore farther. If you brought a car, turn off the GPS and embark on a journey of discovery through random little country roads to rolling hills, meadows, farms and the beautiful little towns nearby. Click on the following <a href=\"http://bit.ly/2nY2qVw\" class=\"text-primary\" target=\"_blank\">link to see some of the hidden gems plotted on google maps.&nbsp;</a></p>",
           "_tags": [
             "Theme"
           ],
@@ -3895,7 +3799,7 @@
             "overlayOpacity": 0.5
           },
           "headerAlign": "left",
-          "header": "Leeds Properties",
+          "header": "Palenville Properties",
           "subheader": "By John Smith posted July 30, 2015",
           "media1": {
             "image": {
@@ -3917,7 +3821,7 @@
               "size": 0
             }
           },
-          "title1": "The Venster",
+          "title1": "The A frame cabin",
           "caption1": "A 400 sqft tiny studio with private parking, private entrance, private deck, bathroom, kitchenette, indoor fireplace and outdoor fireplace.<br>*11 miles to Woodstock and Hunter\n<br>* Walking distance to NYC bus, cafe, swimming holes, grocery &amp; restaurants.<br>",
           "button1": "<a data-app-btn=\"true\" href=\"aframe.html\" class=\"mbr-buttons__btn btn btn-wrap btn-xs-lg btn-default\" data-toolbar=\"-mbrBtnMove\">LEARN MORE</a>",
           "media2": {
@@ -3940,7 +3844,7 @@
               "size": 0
             }
           },
-          "title2": "The cabin",
+          "title2": "Stargazer tiny house",
           "caption2": "Two tiny houses for the price of one -the stargazer and the pool house, both are connected by a private deck. The pool house is heated and has a bathroom and kitchenette. It is half an hour or less from Woodstock, Hunter, Hudson, Catskill, Saugetries and beautiful hikes around Kaaterskill.",
           "button2": "<a data-app-btn=\"true\" href=\"stargazer.html\" class=\"mbr-buttons__btn btn btn-wrap btn-xs-lg btn-default\" data-toolbar=\"-mbrBtnMove\">LEARN MORE</a>",
           "media3": {
@@ -4063,7 +3967,7 @@
             "fontName": {},
             "fontColor": "#eeeeee"
           },
-          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown open\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"true\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
+          "items": "<li class=\"nav-item\"><a data-app-btn=\"true\" class=\"nav-link link text-primary\" href=\"index.html\">HOME</a></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link text-primary dropdown-toggle\" href=\"#\" data-toggle=\"dropdown-submenu\" aria-expanded=\"false\">LOCATIONS</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"palenville.html\">Palenville</a><a data-app-btn=\"true\" class=\"text-primary dropdown-item\" href=\"page4.html\" aria-expanded=\"false\">Leeds</a></div></li><li class=\"nav-item dropdown\"><a data-app-btn=\"true\" class=\"nav-link link dropdown-toggle\" data-toggle=\"dropdown-submenu\" href=\"https://mobirise.com/\" aria-expanded=\"false\">PROPERTIES</a><div class=\"dropdown-menu\"><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"aframe.html\">A FRAME IN PALENVILLE</a><a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"stargazer.html\">STARGAZER IN PALENVILLE</a> <a data-app-btn=\"true\" class=\"dropdown-item text-primary\" href=\"venster.html\">THE VENSTER</a></div></li><li class=\"nav-item nav-btn\"><a data-app-btn=\"true\" data-button=\"\" data-app-selector=\".btn\" class=\"nav-link btn btn-default-outline btn-default\" href=\"index.html#content5-3v\">BOOK</a></li>",
           "logo": {
             "image": {
               "active": true,
