@@ -29,9 +29,6 @@
     "sitemapSwitcher": false,
     "cookiesAlert": false,
     "gdpr": false,
-    "publishType": "local",
-    "mbrsite": "mbrsite://%7B%22id%22%3A270104%2C%22domain%22%3A%22ck6yuufadm.mobirisesite.com%22%7D",
-    "publishPath": "file:///C:/Users/boras/OneDrive/Documents/test",
     "mbrsiteDomain": "ck6yuufadm"
   },
   "pages": {
@@ -1106,7 +1103,7 @@
           "media1": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/-mg-4127-600x340.jpg",
+              "src": "@PROJECT_PATH@/assets/images/mg-4127-600x340.jpg",
               "class": "mbr-figure__img",
               "width": 600,
               "link": "",
@@ -1654,7 +1651,7 @@
         "header_custom": "",
         "footer_custom": "",
         "html_before": "",
-        "meta_image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg"
+        "meta_image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg"
       },
       "components": [
         {
@@ -2074,7 +2071,7 @@
             "bgColor": "#ffffff",
             "slides": [
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg",
                 "active": true,
                 "showButtons": true,
                 "showText": true,
@@ -2433,7 +2430,7 @@
         "meta_descr": "Site Maker Ddsfafsescription",
         "title": "Home",
         "order": 2,
-        "meta_image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg"
+        "meta_image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg"
       },
       "components": [
         {
@@ -2513,7 +2510,7 @@
                 "overlayColor": "#28324e"
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg",
                 "active": false,
                 "showButtons": true,
                 "showText": true,
@@ -3352,7 +3349,7 @@
             "bgColor": "#4c6972",
             "images": [
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4127-2000x1333.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4127-2000x1333.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4127-2000x1333-800x533.jpg",
                 "alt": "",
                 "title": "",
@@ -3360,7 +3357,7 @@
                 "active": true
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4107-2000x2654.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4107-2000x2654.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4107-2000x2654-800x1062.jpg",
                 "alt": "",
                 "title": "",
@@ -3392,7 +3389,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4096-2000x2741.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4096-2000x2741.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4096-2000x2741-800x1096.jpg",
                 "alt": "",
                 "title": "",
@@ -3400,7 +3397,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4108-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4108-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4108-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
@@ -3408,7 +3405,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4112-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4112-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4112-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
@@ -3416,7 +3413,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/-mg-4117-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/mg-4117-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4117-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
