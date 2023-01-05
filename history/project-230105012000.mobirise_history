@@ -1,9 +1,9 @@
 {
   "settings": {
     "name": "hudson",
-    "currentPage": "stargazer.html",
+    "currentPage": "aframe.html",
     "versionFirst": "4.0.14",
-    "uniqCompNum": 230,
+    "uniqCompNum": 224,
     "versionPublish": "5.7.0",
     "theme": {
       "additionalSetColors": [
@@ -16,7 +16,7 @@
         "#3c3c3c"
       ]
     },
-    "favicon": "@PROJECT_PATH@/assets/images/logo-128x50.png",
+    "favicon": "@PROJECT_PATH@/assets/images/resized-logo-128x36.png",
     "noImageResize": "",
     "robotsText": "User-agent: *\r\nDisallow: /cgi-bin\r\n",
     "robotsSwitcher": "on",
@@ -29,12 +29,15 @@
     "sitemapSwitcher": false,
     "cookiesAlert": false,
     "gdpr": false,
+    "publishType": "mbrsite",
+    "mbrsite": "mbrsite://%7B%22id%22%3A270104%2C%22domain%22%3A%22ck6yuufadm.mobirisesite.com%22%7D",
+    "publishPath": "@PROJECT_PATH@",
     "mbrsiteDomain": "ck6yuufadm"
   },
   "pages": {
     "stargazer.html": {
       "settings": {
-        "title": "Stargazer@Palenville",
+        "title": "stargazer",
         "meta_descr": "",
         "header_custom": "",
         "footer_custom": "",
@@ -572,7 +575,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": false
+                "active": true
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/7b0f9900-03f0-4c49-9e2e-47b96ec61030-1-1440x960.jpg",
@@ -588,7 +591,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/9bdcdcb3-4d1b-4ed5-8500-152ddbe8efc5-1-1440x960.jpg",
@@ -596,7 +599,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/25c8a27e-c1c8-42e0-a2d1-939dc516829e-1-1440x960.jpg",
@@ -652,7 +655,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/d7454b1e-7391-4754-976b-bd05afafd005-1-1440x960.jpg",
@@ -668,7 +671,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/f4ff6516-8aa9-4002-b140-9bbae27b740f-1-1440x960.jpg",
@@ -783,35 +786,6 @@
           "_name": "content5",
           "_anchor": "content5-40",
           "_sourceTheme": "default"
-        },
-        {
-          "alias": "witsec-code-editor/components",
-          "_isSecondary": true,
-          "_styles": {
-            "& when not (@fullScreen)": {
-              "padding-top": "(@paddingTop * 15px)",
-              "padding-bottom": "(@paddingBottom * 15px)"
-            },
-            "& when (@bg-type = 'color')": {
-              "background-color": "@bg-value"
-            },
-            "& when (@bg-type = 'image')": {
-              "background-image": "url(@bg-value)"
-            },
-            "img": {
-              "width": "auto"
-            }
-          },
-          "_name": "witsec-html-block",
-          "_customHTML": "<section class=\"mbr-section mbr-section--no-padding\" data-bg-video=\"{{bg.type == 'video' &amp;&amp; bg.value.url}}\" mbr-class=\"{'mbr-fullscreen': fullScreen, 'mbr-parallax-background': bg.parallax}\">\n\n<mbr-parameters>\n    <!-- Block parameters controls (Blue \"Gear\" panel) -->\n    <header>Size</header>\n    <input type=\"checkbox\" title=\"Full Screen\" name=\"fullScreen\" checked=\"\">\n    <input type=\"range\" inline=\"\" title=\"Top\" name=\"paddingTop\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n    <input type=\"range\" inline=\"\" title=\"Bottom\" name=\"paddingBottom\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n\n    <header>Background</header>\n    <fieldset type=\"background\" name=\"bg\" parallax=\"\">\n    <input type=\"image\" title=\"Background Image\" value=\"@PROJECT_PATH@/assets/images/background.jpg\" parallax=\"\">\n    <input type=\"color\" title=\"Background Color\" value=\"#efefef\" selected=\"\">\n    <input type=\"video\" title=\"Background Video\" value=\"https://www.youtube.com/watch?v=36YgDDJ7XSc\">\n    </fieldset>\n    <input type=\"checkbox\" title=\"Overlay\" name=\"overlay\" condition=\"bg.type !== 'color'\" checked=\"\">\n    <input type=\"color\" title=\"Overlay Color\" name=\"overlayColor\" value=\"#232323\" condition=\"overlay &amp;&amp; bg.type !== 'color'\">\n    <input type=\"range\" inline=\"\" title=\"Opacity\" name=\"overlayOpacity\" min=\"0\" max=\"1\" step=\"0.1\" value=\"0.6\" condition=\"overlay &amp;&amp; bg.type !== 'color'\">\n    <!-- End block parameters -->\n</mbr-parameters>\n\n <div class=\"mbr-section__container container mbr-section__container--last\" style=\"padding-bottom: 93px;\">\n        <div class=\"row\">\n            <div class=\"mbr-article mbr-article--wysiwyg col-sm-8 col-sm-offset-2\">\n\n<!-- Place your own code below -->\n<a>Book on airbnb</a>&nbsp; <p></p><p>Book directly and save upto 30%!</p>\n\n\n<iframe id=\"booking-iframe\" sandbox=\"allow-top-navigation allow-scripts allow-same-origin\" style=\"width: 100%; height: 360px\" frameborder=\"0\" src=\"https://booking.hospitable.com/widget/external/947394\">\n\t\t</iframe> \n\t\t </div>\n    </div>\n    </div>\n<!-- Place your own code above -->\n\n</section>",
-          "_anchor": "witsec-html-block-6d",
-          "_isUserblock": true,
-          "_sourceTheme": "default",
-          "_cid": "ts6mtTlqwv",
-          "_protectedParams": [],
-          "_global": false,
-          "_once": false,
-          "_params": {}
         },
         {
           "_params": {
@@ -1132,7 +1106,7 @@
           "media1": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/mg-4127-600x340.jpg",
+              "src": "@PROJECT_PATH@/assets/images/-mg-4127-600x340.jpg",
               "class": "mbr-figure__img",
               "width": 600,
               "link": "",
@@ -2144,7 +2118,7 @@
         "meta_descr": "Site Maker Ddsfafsescription",
         "title": "Home",
         "order": 2,
-        "meta_image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg"
+        "meta_image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg"
       },
       "components": [
         {
@@ -2224,7 +2198,7 @@
                 "overlayColor": "#28324e"
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4126-2000x1132.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4126-2000x1132.jpg",
                 "active": false,
                 "showButtons": true,
                 "showText": true,
@@ -2572,7 +2546,7 @@
     "venster.html": {
       "settings": {
         "meta_descr": "The Venster Tiny House on Wheels",
-        "title": "The Venster@Leeds",
+        "title": "The Venster",
         "order": 4
       },
       "components": [
@@ -2892,7 +2866,7 @@
             "overlayOpacity": 0.2
           },
           "title": "STAY AT THE A VENSTER!&nbsp;<br><br>",
-          "text": "<p>This is a Its a 144 sqft tiny house on wheels, located in a large 8 acre, mostly wooded property. While there is a main cabin about 100 feet away, It is quite secluded and you will have your very private deck and a outdoor fireplace for making smores.&nbsp;</p><p><br></p>",
+          "text": "<p>This is a Its a 144 sqft tiny house on wheels, located in a large 8 acre, mostly wooded property. While there is a main cabin about 100 feet away, It is quite secluded and you will have your very private deck and a outdoor fireplace for making smores.&nbsp;</p><p>Book directly and save!<br></p><p><br></p>",
           "button": "<a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"https://mobirise.com\">LEARN MORE</a>",
           "_tags": [
             "Theme"
@@ -2901,35 +2875,6 @@
           "_name": "content5",
           "_anchor": "content5-5q",
           "_sourceTheme": "default"
-        },
-        {
-          "alias": "witsec-code-editor/components",
-          "_isSecondary": true,
-          "_styles": {
-            "& when not (@fullScreen)": {
-              "padding-top": "(@paddingTop * 15px)",
-              "padding-bottom": "(@paddingBottom * 15px)"
-            },
-            "& when (@bg-type = 'color')": {
-              "background-color": "@bg-value"
-            },
-            "& when (@bg-type = 'image')": {
-              "background-image": "url(@bg-value)"
-            },
-            "img": {
-              "width": "auto"
-            }
-          },
-          "_name": "witsec-html-block",
-          "_customHTML": "<section class=\"mbr-section mbr-section--no-padding\" data-bg-video=\"{{bg.type == 'video' &amp;&amp; bg.value.url}}\" mbr-class=\"{'mbr-fullscreen': fullScreen, 'mbr-parallax-background': bg.parallax}\">\n\n<mbr-parameters>\n    <!-- Block parameters controls (Blue \"Gear\" panel) -->\n    <header>Size</header>\n    <input type=\"checkbox\" title=\"Full Screen\" name=\"fullScreen\" checked=\"\">\n    <input type=\"range\" inline=\"\" title=\"Top\" name=\"paddingTop\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n    <input type=\"range\" inline=\"\" title=\"Bottom\" name=\"paddingBottom\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n\n    <header>Background</header>\n    <fieldset type=\"background\" name=\"bg\" parallax=\"\">\n    <input type=\"image\" title=\"Background Image\" value=\"@PROJECT_PATH@/assets/images/background.jpg\" parallax=\"\">\n    <input type=\"color\" title=\"Background Color\" value=\"#efefef\" selected=\"\">\n    <input type=\"video\" title=\"Background Video\" value=\"https://www.youtube.com/watch?v=36YgDDJ7XSc\">\n    </fieldset>\n    <input type=\"checkbox\" title=\"Overlay\" name=\"overlay\" condition=\"bg.type !== 'color'\" checked=\"\">\n    <input type=\"color\" title=\"Overlay Color\" name=\"overlayColor\" value=\"#232323\" condition=\"overlay &amp;&amp; bg.type !== 'color'\">\n    <input type=\"range\" inline=\"\" title=\"Opacity\" name=\"overlayOpacity\" min=\"0\" max=\"1\" step=\"0.1\" value=\"0.6\" condition=\"overlay &amp;&amp; bg.type !== 'color'\">\n    <!-- End block parameters -->\n</mbr-parameters>\n\n <div class=\"mbr-section__container container mbr-section__container--last\" style=\"padding-bottom: 93px;\">\n        <div class=\"row\">\n            <div class=\"mbr-article mbr-article--wysiwyg col-sm-8 col-sm-offset-2\">\n\n<!-- Place your own code below -->\n<a>Book on airbnb</a>&nbsp; <p></p><p>Book directly and save upto 30%!</p>\n\n\n<iframe id=\"booking-iframe\" sandbox=\"allow-top-navigation allow-scripts allow-same-origin\" style=\"width: 100%; height: 360px\" frameborder=\"0\" src=\"https://booking.hospitable.com/widget/external/947394\">\n\t\t</iframe> \n\t\t </div>\n    </div>\n    </div>\n<!-- Place your own code above -->\n\n</section>",
-          "_anchor": "witsec-html-block-6c",
-          "_isUserblock": true,
-          "_sourceTheme": "default",
-          "_cid": "ts6mjvAblp",
-          "_protectedParams": [],
-          "_global": false,
-          "_once": false,
-          "_params": {}
         },
         {
           "_params": {
@@ -2984,7 +2929,7 @@
     "aframe.html": {
       "settings": {
         "meta_descr": "A Frame in Palenville",
-        "title": "A Frame@Palenville",
+        "title": "A Frame @ Palenville",
         "order": 5
       },
       "components": [
@@ -3092,7 +3037,7 @@
             "bgColor": "#4c6972",
             "images": [
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4127-2000x1333.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4127-2000x1333.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4127-2000x1333-800x533.jpg",
                 "alt": "",
                 "title": "",
@@ -3100,7 +3045,7 @@
                 "active": true
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4107-2000x2654.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4107-2000x2654.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4107-2000x2654-800x1062.jpg",
                 "alt": "",
                 "title": "",
@@ -3132,7 +3077,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4096-2000x2741.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4096-2000x2741.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4096-2000x2741-800x1096.jpg",
                 "alt": "",
                 "title": "",
@@ -3140,7 +3085,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4108-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4108-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4108-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
@@ -3148,7 +3093,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4112-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4112-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4112-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
@@ -3156,7 +3101,7 @@
                 "active": false
               },
               {
-                "image": "@PROJECT_PATH@/assets/images/mg-4117-2000x1334.jpg",
+                "image": "@PROJECT_PATH@/assets/images/-mg-4117-2000x1334.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/mg-4117-2000x1334-800x534.jpg",
                 "alt": "",
                 "title": "",
@@ -3256,7 +3201,7 @@
             "overlayOpacity": 0.2
           },
           "title": "STAY AT THE A FRAME!&nbsp;<br><br>",
-          "text": "<p><br></p><p><br></p>",
+          "text": "<p><a href=\"https://www.airbnb.com/rooms/25452228\" class=\"text-primary\" target=\"_blank\">Book on airbnb</a>&nbsp;( More expensive because of airbnb's cut)</p><p>Book directly and save!</p><p><br></p>",
           "button": "<a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"https://mobirise.com\">LEARN MORE</a>",
           "_tags": [
             "Theme"
@@ -3265,34 +3210,6 @@
           "_name": "content5",
           "_anchor": "content5-63",
           "_sourceTheme": "default"
-        },
-        {
-          "alias": "witsec-code-editor/components",
-          "_isSecondary": true,
-          "_styles": {
-            "& when not (@fullScreen)": {
-              "padding-top": "(@paddingTop * 15px)",
-              "padding-bottom": "(@paddingBottom * 15px)"
-            },
-            "& when (@bg-type = 'color')": {
-              "background-color": "@bg-value"
-            },
-            "& when (@bg-type = 'image')": {
-              "background-image": "url(@bg-value)"
-            },
-            "img": {
-              "width": "auto"
-            }
-          },
-          "_name": "witsec-html-block",
-          "_sourceTheme": "default",
-          "_customHTML": "<section class=\"mbr-section mbr-section--no-padding\" data-bg-video=\"{{bg.type == 'video' && bg.value.url}}\" mbr-class=\"{'mbr-fullscreen': fullScreen, 'mbr-parallax-background': bg.parallax}\">\n\n<mbr-parameters>\n    <!-- Block parameters controls (Blue \"Gear\" panel) -->\n    <header>Size</header>\n    <input type=\"checkbox\" title=\"Full Screen\" name=\"fullScreen\" checked>\n    <input type=\"range\" inline title=\"Top\" name=\"paddingTop\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n    <input type=\"range\" inline title=\"Bottom\" name=\"paddingBottom\" min=\"0\" max=\"9\" step=\"1\" value=\"6\" condition=\"fullScreen == false\">\n\n    <header>Background</header>\n    <fieldset type=\"background\" name=\"bg\" parallax>\n    <input type=\"image\" title=\"Background Image\" value=\"../_images/background.jpg\" parallax>\n    <input type=\"color\" title=\"Background Color\" value=\"#efefef\" selected>\n    <input type=\"video\" title=\"Background Video\" value=\"https://www.youtube.com/watch?v=36YgDDJ7XSc\">\n    </fieldset>\n    <input type=\"checkbox\" title=\"Overlay\" name=\"overlay\" condition=\"bg.type !== 'color'\" checked>\n    <input type=\"color\" title=\"Overlay Color\" name=\"overlayColor\" value=\"#232323\" condition=\"overlay && bg.type !== 'color'\">\n    <input type=\"range\" inline title=\"Opacity\" name=\"overlayOpacity\" min=\"0\" max=\"1\" step=\"0.1\" value=\"0.6\" condition=\"overlay && bg.type !== 'color'\">\n    <!-- End block parameters -->\n</mbr-parameters>\n\n <div class=\"mbr-section__container container mbr-section__container--last\" style=\"padding-bottom: 93px;\">\n        <div class=\"row\">\n            <div class=\"mbr-article mbr-article--wysiwyg col-sm-8 col-sm-offset-2\">\n\n<!-- Place your own code below -->\n<a>Book on airbnb</a>&nbsp; <p></p><p>Book directly and save upto 30%!</p>\n\n\n<iframe id=\"booking-iframe\" sandbox=\"allow-top-navigation allow-scripts allow-same-origin\" style=\"width: 100%; height: 360px\" frameborder=\"0\" src=\"https://booking.hospitable.com/widget/external/947394\">\n\t\t</iframe> \n\t\t </div>\n    </div>\n    </div>\n<!-- Place your own code above -->\n\n</section>",
-          "_cid": "ts6aGUf4Af",
-          "_anchor": "witsec-html-block-6a",
-          "_protectedParams": [],
-          "_global": false,
-          "_once": false,
-          "_params": {}
         },
         {
           "_params": {
@@ -3317,8 +3234,53 @@
             "Theme"
           ],
           "_name": "social-buttons1",
-          "_anchor": "social-buttons1-6b",
+          "_anchor": "social-buttons1-5z",
           "_sourceTheme": "default"
+        },
+        {
+          "_params": {
+            "paddingTop": 3,
+            "paddingBottom": 3,
+            "bgImageRadio": false,
+            "bgImage": "images/bg3.jpg",
+            "parallax": true,
+            "bgColorRadio": true,
+            "bgColor": "#f0f0f0",
+            "overlay": false,
+            "overlayColor": "#222",
+            "overlayOpacity": 0.5
+          },
+          "text": "FOLLOW US",
+          "icons": " <a data-app-btn=\"true\" class=\"mbr-social-icons__icon socicon-bg-facebook text-primary\" title=\"Facebook\" target=\"_blank\" href=\"https://www.facebook.com/Hudson-Valley-Getaways-343168886090553\" data-toolbar=\"-mbrBtnAdd,-mbrBtnMove,-mbrFonts,-mbrFontSize\"><i class=\"socicon socicon-facebook\"></i></a>   <a data-app-btn=\"true\" class=\"mbr-social-icons__icon socicon-bg-instagram\" title=\"Instagram\" target=\"_blank\" href=\"https://instagram.com/mobirise/\" data-toolbar=\"-mbrBtnAdd,-mbrBtnMove,-mbrFonts,-mbrFontSize\"><i class=\"socicon socicon-instagram\"></i></a>      ",
+          "_tags": [
+            "Theme"
+          ],
+          "_name": "social-buttons2",
+          "_anchor": "social-buttons2-5y",
+          "_sourceTheme": "default"
+        },
+        {
+          "alias": "witsec-code-editor/components",
+          "_isSecondary": true,
+          "_styles": {
+            "& when not (@fullScreen)": {
+              "padding-top": "(@paddingTop * 15px)",
+              "padding-bottom": "(@paddingBottom * 15px)"
+            },
+            "& when (@bg-type = 'color')": {
+              "background-color": "@bg-value"
+            },
+            "& when (@bg-type = 'image')": {
+              "background-image": "url(@bg-value)"
+            },
+            "img": {
+              "width": "auto"
+            }
+          },
+          "_name": "witsec-html-block",
+          "_cid": "ts2KQ8QZU9",
+          "_protectedParams": [],
+          "_params": {}
         }
       ]
     }
