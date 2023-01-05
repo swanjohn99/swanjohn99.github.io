@@ -1,7 +1,7 @@
 {
   "settings": {
     "name": "hudson",
-    "currentPage": "index.html",
+    "currentPage": "aframe.html",
     "versionFirst": "4.0.14",
     "uniqCompNum": 221,
     "versionPublish": "5.7.0",
@@ -873,7 +873,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
@@ -1274,7 +1274,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
@@ -1627,7 +1627,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
@@ -2154,11 +2154,12 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
               "link": "index.html",
+              "linkInNewWindow": false,
               "title": ""
             }
           },
@@ -2485,12 +2486,12 @@
             "bgColor": "#ffffff",
             "slides": [
               {
-                "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0013-1-1024x768.jpg",
+                "image": "@PROJECT_PATH@/assets/images/img-20221211-wa0011-1024x768.jpg",
                 "active": true,
                 "showButtons": true,
                 "showText": true,
                 "showTitle": true,
-                "title": "The Venster@Leeds<div><br></div>",
+                "title": "&nbsp; &nbsp;<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <br>&nbsp; &nbsp; &nbsp;<a href=\"venster.html\" class=\"text-black\">The Venster@Leeds</a><div><br></div>",
                 "contentAlign": "left",
                 "text": "A secluded tiny house on wheels fifteen minute from Hudson, NY",
                 "buttons": " <a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"venster.html\" data-toolbar=\"-mbrBtnMove\">MORE</a> <a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"venster.html#content5-5q\" data-toolbar=\"-mbrBtnMove\">BOOK</a>",
@@ -2538,8 +2539,7 @@
               "text-align": "left"
             },
             "H1": {
-              "color": "#e7e7e7",
-              "font-size": "32px"
+              "color": "#000000"
             }
           },
           "_anchor": "slider-5e",
@@ -2839,7 +2839,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
@@ -2903,7 +2903,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
@@ -3286,7 +3286,7 @@
           "logo": {
             "image": {
               "active": true,
-              "src": "@PROJECT_PATH@/assets/images/logo-331x128.png",
+              "src": "@PROJECT_PATH@/assets/images/resized-logo-1-128x36.png",
               "class": "",
               "height": 128,
               "alt": "Mobirise",
