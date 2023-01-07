@@ -2441,7 +2441,7 @@
           },
           "title": "STAY WITH US",
           "meta": "By John Smith posted July 30, 2015",
-          "text": "<p><a href=\"https://www.airbnb.com/rooms/25452228\" class=\"text-primary\">Book A Frame @ Palenville on Airbnb</a>&nbsp; <a href=\"https://www.airbnb.com/rooms/37087043\" class=\"text-primary\">Book Stargazer @ Palenville on Airbnb&nbsp;</a>&nbsp;&nbsp;</p>",
+          "text": "<p><a href=\"https://www.airbnb.com/rooms/25452228\" class=\"text-primary\">Book A Frame @ Palenville on Airbnb</a>&nbsp; &nbsp;<a href=\"https://www.airbnb.com/rooms/37087043\" class=\"text-primary\">Book Stargazer @ Palenville on Airbnb&nbsp;</a>&nbsp;&nbsp;</p>",
           "button": "<a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"https://mobirise.com\" data-toolbar=\"-mbrBtnMove\">Book A frame tiny house direct and save up to 30%</a> <a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"aframe.html#witsec-html-block-6a\" data-toolbar=\"-mbrBtnMove\">Book Stargazer tiny house direct and save up to 30%</a> <a data-app-btn=\"true\" class=\"mbr-buttons__btn btn btn-lg btn-default\" href=\"venster.html#witsec-html-block-6c\" data-toolbar=\"-mbrBtnMove\">Book Venster Tiny House direct and save up to 30%</a>  ",
           "_tags": [
             "Theme"
@@ -3083,7 +3083,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": true
+                "active": false
               },
               {
                 "image": "@PROJECT_PATH@/assets/images/mg-4107-2000x2654.jpg",
@@ -3091,14 +3091,6 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/cabin-near-woodstock-hunter-nyc-bus-borrow-bike-guesthouses-for-rent-in-palenville-new-york-united-states-4-720x480.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/cabin-near-woodstock-hunter-nyc-bus-borrow-bike-guesthouses-for-rent-in-palenville-new-york-united-states-4-720x480-720x480.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Indoor fireplace controlled by a thermostat",
                 "active": false
               },
               {
@@ -3158,6 +3150,14 @@
                 "active": false
               },
               {
+                "image": "@PROJECT_PATH@/assets/images/img-20190929-122553568-hdr-2-2000x2667.jpg",
+                "thumb": "@PROJECT_PATH@/assets/images/img-20190929-122553568-hdr-2-2000x2667-800x1067.jpg",
+                "alt": "",
+                "title": "",
+                "caption": "Type caption here",
+                "active": false
+              },
+              {
                 "image": "@PROJECT_PATH@/assets/images/pxl-20210114-205308190-2000x1125.jpg",
                 "thumb": "@PROJECT_PATH@/assets/images/pxl-20210114-205308190-2000x1125-800x450.jpg",
                 "alt": "",
@@ -3171,23 +3171,7 @@
                 "alt": "",
                 "title": "",
                 "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/img-20190929-122553568-hdr-2-2000x2667.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/img-20190929-122553568-hdr-2-2000x2667-800x1067.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
-              },
-              {
-                "image": "@PROJECT_PATH@/assets/images/pxl-20210127-135628783-2000x3556.jpg",
-                "thumb": "@PROJECT_PATH@/assets/images/pxl-20210127-135628783-2000x3556-800x1422.jpg",
-                "alt": "",
-                "title": "",
-                "caption": "Type caption here",
-                "active": false
+                "active": true
               }
             ]
           },
