@@ -121,16 +121,11 @@
   color: #e7e7e7;
   font-size: 32px;
 }
-#content5-5f .mbr-header .mbr-header__text {
+#msg-box3-6f .mbr-header .mbr-header__text {
   text-align: center;
-  color: #000000;
 }
-#content5-5f .mbr-header .mbr-header__subtext {
+#msg-box3-6f .mbr-header .mbr-header__subtext {
   text-align: center;
-  color: #fff;
-}
-#content5-5f .mbr-article {
-  color: #000000;
 }
 #dropdown-menu-5c .hide-buttons [data-button] {
   display: none !important;
