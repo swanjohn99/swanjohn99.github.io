@@ -3,30 +3,865 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Direct Booking — Hudson Getaways</title>
+  <title>Hudson Getaways — Guest Registration</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      height: 100%;
-      background: #1e3a2f;
-      font-family: 'DM Sans', sans-serif;
+    :root {
+      --forest:  #1e3a2f;
+      --moss:    #3d6b54;
+      --sage:    #7aab8a;
+      --cream:   #f5f0e8;
+      --smoke:   #8a9e94;
+      --white:   #fdfaf5;
+      --ember:   #c97c3a;
+      --err:     #c0392b;
+      --ok:      #2ecc71;
+      --warn:    #e67e22;
+      --radius:  12px;
+      --shadow:  0 8px 32px rgba(30,58,47,.18);
     }
 
-    iframe {
-      display: block;
-      width: 100%;
-      height: 100vh;
-      border: none;
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--forest);
+      color: var(--cream);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(61,107,84,.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 90%, rgba(201,124,58,.15) 0%, transparent 55%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 52px 24px 96px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 52px;
+      animation: fadeDown .7s ease both;
+    }
+    .logo-icon { font-size: 2.8rem; display: block; margin-bottom: 14px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+    h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(2rem,5vw,3rem); font-weight: 700; line-height: 1.15; color: var(--white); }
+    h1 em { font-style: italic; color: var(--sage); }
+    .subtitle { margin-top: 10px; font-size: .9rem; color: var(--smoke); font-weight: 300; letter-spacing: .06em; text-transform: uppercase; }
+
+    .form-card {
+      background: rgba(253,250,245,.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: var(--shadow);
+      animation: fadeUp .7s .15s ease both;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+
+    label { font-size: .75rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--sage); }
+    label .opt { font-size: .7rem; color: var(--smoke); font-weight: 300; text-transform: none; letter-spacing: 0; }
+
+    input, select {
+      width: 100%;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: var(--radius);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      padding: 12px 16px;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input::placeholder { color: rgba(255,255,255,.28); }
+    input:focus, select:focus { border-color: var(--sage); background: rgba(255,255,255,.11); box-shadow: 0 0 0 3px rgba(122,171,138,.2); }
+    input.error, select.error { border-color: var(--err); box-shadow: 0 0 0 3px rgba(192,57,43,.18); }
+    input:disabled { opacity: .5; cursor: not-allowed; }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after { content: '▾'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--sage); pointer-events: none; }
+    select option { background: #1e3a2f; color: var(--white); }
+
+    .err-msg { font-size: .75rem; color: #e07070; min-height: 16px; display: block; }
+
+    .divider { height: 1px; background: rgba(255,255,255,.08); margin: 4px 0; grid-column: 1 / -1; }
+
+    #availPanel {
+      grid-column: 1 / -1;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.1);
+      display: none;
+    }
+
+    #availPanel.visible { display: block; }
+
+    .avail-checking {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,.05);
+      font-size: .9rem;
+      color: var(--smoke);
+    }
+
+    .avail-checking .mini-spin {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: var(--sage);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .avail-selected {
+      padding: 18px 20px;
+    }
+
+    .avail-selected.ok   { background: rgba(46,204,113,.1);  border-left: 3px solid var(--ok);   }
+    .avail-selected.warn { background: rgba(230,126,34,.1);  border-left: 3px solid var(--warn); }
+    .avail-selected.err  { background: rgba(192,57,43,.08);  border-left: 3px solid var(--err);  }
+
+    .avail-headline {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .avail-icon { font-size: 1.15rem; }
+
+    .date-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      font-size: .72rem;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-weight: 500;
+      letter-spacing: .02em;
+    }
+    .chip.free    { background: rgba(46,204,113,.18);  color: #7debb0; border: 1px solid rgba(46,204,113,.3);  }
+    .chip.blocked { background: rgba(192,57,43,.2);    color: #f08080; border: 1px solid rgba(192,57,43,.35); }
+
+    .avail-others-toggle {
+      padding: 12px 20px;
+      background: rgba(255,255,255,.04);
+      border-top: 1px solid rgba(255,255,255,.07);
+      cursor: pointer;
+      font-size: .82rem;
+      color: var(--smoke);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background .2s;
+    }
+    .avail-others-toggle:hover { background: rgba(255,255,255,.08); }
+    .avail-others-toggle .toggle-arrow { transition: transform .25s; }
+    .avail-others-toggle.open .toggle-arrow { transform: rotate(180deg); }
+
+    .avail-others-body {
+      display: none;
+      padding: 4px 0 8px;
+      background: rgba(0,0,0,.12);
+    }
+    .avail-others-body.open { display: block; }
+
+    .other-cabin-row {
+      padding: 10px 20px;
+      border-top: 1px solid rgba(255,255,255,.05);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .other-cabin-name {
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .avail-badge {
+      font-size: .68rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .avail-badge.ok   { background: rgba(46,204,113,.2);  color: #7debb0; }
+    .avail-badge.warn { background: rgba(230,126,34,.2);  color: #f0b070; }
+    .avail-badge.grey { background: rgba(255,255,255,.1); color: var(--smoke); }
+
+    .btn-wrap { margin-top: 32px; display: flex; justify-content: center; flex-direction: column; align-items: center; gap: 10px; }
+
+    #submitHint {
+      font-size: .8rem;
+      color: var(--smoke);
+      text-align: center;
+    }
+
+    button[type="submit"] {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--ember), #a8612a);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+      padding: 15px 48px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(201,124,58,.35);
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+    }
+    button[type="submit"]:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(201,124,58,.48); }
+    button[type="submit"]:disabled { opacity: .4; cursor: not-allowed; }
+
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+
+    .cabins-section { margin-top: 60px; animation: fadeUp .7s .35s ease both; }
+    .section-heading { text-align: center; margin-bottom: 28px; }
+    .section-heading h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.6rem; font-weight: 700; color: var(--white); }
+    .section-heading p { margin-top: 6px; font-size: .85rem; color: var(--smoke); }
+
+    .cabin-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; }
+
+    .cabin-tile { display: block; text-decoration: none; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); box-shadow: 0 4px 20px rgba(0,0,0,.25); transition: transform .25s, box-shadow .25s, border-color .25s; }
+    .cabin-tile:hover { transform: translateY(-6px); box-shadow: 0 16px 44px rgba(0,0,0,.4); border-color: rgba(122,171,138,.38); }
+    .cabin-tile:hover .tile-img { transform: scale(1.06); }
+
+    .tile-img-wrap { width: 100%; aspect-ratio: 16/10; overflow: hidden; background: rgba(255,255,255,.04); }
+    .tile-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .45s; }
+
+    .tile-footer { padding: 14px 18px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .tile-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1.05rem; font-weight: 700; color: var(--white); }
+    .tile-arrow { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: rgba(201,124,58,.15); border: 1px solid rgba(201,124,58,.3); display: flex; align-items: center; justify-content: center; font-size: .85rem; color: var(--ember); transition: background .2s, transform .2s; }
+    .cabin-tile:hover .tile-arrow { background: rgba(201,124,58,.3); transform: translate(2px,-2px); }
+
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(110px); background: var(--forest); border: 1px solid var(--sage); color: var(--white); border-radius: 12px; padding: 16px 28px; font-size: .92rem; box-shadow: 0 12px 40px rgba(0,0,0,.45); z-index: 100; max-width: 380px; text-align: center; transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0; }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.error { border-color: var(--err); }
+    #toast .toast-icon { font-size: 1.3rem; display: block; margin-bottom: 5px; }
+
+    #success-overlay { display: none; position: fixed; inset: 0; background: rgba(15,30,22,.93); z-index: 200; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 24px; }
+    #success-overlay.show { display: flex; animation: fadeIn .35s ease; }
+    .success-icon { font-size: 5rem; margin-bottom: 24px; animation: popIn .5s .1s ease both; }
+    .success-title { font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; color: var(--white); margin-bottom: 12px; animation: fadeUp .5s .2s ease both; }
+    .success-body { color: var(--smoke); font-size: 1rem; max-width: 380px; line-height: 1.7; animation: fadeUp .5s .3s ease both; }
+    .success-body strong { color: var(--sage); }
+    .btn-new { margin-top: 36px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: var(--white); padding: 13px 34px; border-radius: 50px; font-family: 'DM Sans', sans-serif; font-size: .92rem; cursor: pointer; transition: background .2s; animation: fadeUp .5s .4s ease both; }
+    .btn-new:hover { background: rgba(255,255,255,.18); }
+
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-22px); } to { opacity:1; transform:none; } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(22px);  } to { opacity:1; transform:none; } }
+    @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+    @keyframes spin     { to { transform: rotate(360deg); } }
+    @keyframes popIn    { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
+
+    @media (max-width: 600px) {
+      .form-card { padding: 28px 18px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: 1; }
+      .cabin-tiles { grid-template-columns: 1fr 1fr; gap: 14px; }
+    }
+    @media (max-width: 380px) { .cabin-tiles { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <iframe
-    id="bookingFrame"
-    src="https://script.google.com/macros/s/AKfycbyqEX1IkT5IDBf_Y-aEBH6llsOPn9C-v2tzjGc4GlUnhwbaS_YHkuGUziizWEJNZjQe0A/exec"
-    title="Hudson Getaways Direct Booking"
-    allow="forms"
-  ></iframe>
+
+<div class="page">
+
+  <header>
+    <span class="logo-icon">🌲</span>
+    <h1>Welcome to<br><em>Hudson Getaways</em></h1>
+    <p class="subtitle">Guest Registration &amp; Confirmation</p>
+  </header>
+
+  <div class="form-card">
+    <form id="guestForm" novalidate>
+      <div class="form-grid">
+
+        <div class="field full">
+          <label for="guestName">Full Name</label>
+          <input type="text" id="guestName" name="guestName" placeholder="Jane Doe" autocomplete="name" />
+          <span class="err-msg" id="err-guestName"></span>
+        </div>
+
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="jane@example.com" autocomplete="email" />
+          <span class="err-msg" id="err-email"></span>
+        </div>
+
+        <div class="field">
+          <label for="phone">Phone <span class="opt">(optional)</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="+1 555 000 0000" autocomplete="tel" />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field full">
+          <label for="property">Cabin / Property</label>
+          <div class="select-wrap">
+            <select id="property" name="property">
+              <option value="">— Select a cabin —</option>
+            </select>
+          </div>
+          <span class="err-msg" id="err-property"></span>
+        </div>
+
+        <div class="field">
+          <label for="checkIn">Check-in Date</label>
+          <input type="date" id="checkIn" name="checkIn" />
+          <span class="err-msg" id="err-checkIn"></span>
+        </div>
+
+        <div class="field">
+          <label for="checkOut">Check-out Date</label>
+          <input type="date" id="checkOut" name="checkOut" />
+          <span class="err-msg" id="err-checkOut"></span>
+        </div>
+
+        <div id="availPanel">
+          <!-- content injected by JS -->
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <div class="btn-wrap">
+        <button type="submit" id="submitBtn" disabled>
+          <span id="btnText">Check Availability First</span>
+          <span class="spinner" id="btnSpinner"></span>
+        </button>
+        <span id="submitHint">Select a cabin and dates to check availability</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cabin gallery tiles -->
+  <section class="cabins-section">
+    <div class="section-heading">
+      <h2>Our Cabins</h2>
+      <p>Click any cabin to explore</p>
+    </div>
+    <div class="cabin-tiles" id="cabinTiles"></div>
+  </section>
+
+</div>
+
+<div id="toast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<div id="success-overlay">
+  <div class="success-icon">🏡</div>
+  <h2 class="success-title">You're All Set!</h2>
+  <p class="success-body">
+    Thank you, <strong id="successName"></strong>! Your stay at
+    <strong id="successProperty"></strong> has been registered.<br><br>
+    A confirmation email is on its way to <strong id="successEmail"></strong>.
+    We look forward to welcoming you!
+  </p>
+  <button class="btn-new" onclick="resetForm()">Register Another Guest</button>
+</div>
+
+<script>
+// ── Configuration ──────────────────────────────────────────
+const API_BASE = window.location.origin + '/macros/d/' + 
+  (typeof ScriptApp !== 'undefined' ? 'YOUR_DEPLOYMENT_ID' : '');
+
+// Use URL params to detect if running as web app
+function getAPIBase() {
+  if (typeof google !== 'undefined' && typeof google.script !== 'undefined') {
+    // Running in Google Apps Script context (shouldn't happen with this architecture)
+    return 'local';
+  }
+  // Return the deployment URL for this script
+  return window.location.pathname.split('/')[2];
+}
+
+// ── REST API Calls ─────────────────────────────────────────
+async function apiCall(action, params = {}, method = 'GET') {
+  const scriptUrl = window.location.href.split('?')[0]; // Web app URL
+  
+  try {
+    let url = scriptUrl + '?action=' + action;
+    
+    if (method === 'GET') {
+      for (const [key, value] of Object.entries(params)) {
+        url += '&' + key + '=' + encodeURIComponent(value);
+      }
+      const response = await fetch(url);
+      return await response.json();
+    } else { // POST
+      const response = await fetch(scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...params })
+      });
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('[API Error]', error);
+    return { error: error.toString() };
+  }
+}
+
+// ── State ──────────────────────────────────────────────────
+let propertyData = [];
+let availabilityData = {}; // { cabin → { checkIn, checkOut, analysis } }
+
+let availState = {
+  checked: false,
+  available: false,
+  checking: false
+};
+
+// ── Init: Load property data ───────────────────────────────
+(async function init() {
+  const data = await apiCall('init');
+  
+  if (data.error) {
+    showToast('❌', 'Error loading properties: ' + data.error, true);
+    return;
+  }
+
+  propertyData = data.properties || [];
+
+  const select = document.getElementById('property');
+  const grid = document.getElementById('cabinTiles');
+  const minDate = data.today;
+
+  // Set min dates
+  document.getElementById('checkIn').min = minDate;
+  document.getElementById('checkOut').min = minDate;
+
+  propertyData.forEach((p) => {
+    // Dropdown
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+
+    // Tile
+    const tile = document.createElement('a');
+    tile.className = 'cabin-tile';
+    tile.href = p.pageUrl || '#';
+    tile.target = '_blank';
+    tile.rel = 'noopener noreferrer';
+    tile.title = 'View ' + p.name;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'tile-img-wrap';
+    const img = document.createElement('img');
+    img.className = 'tile-img';
+    img.src = p.imageUrl || '';
+    img.alt = p.name;
+    img.loading = 'lazy';
+    img.onerror = function() { this.style.display = 'none'; };
+    wrap.appendChild(img);
+
+    const footer = document.createElement('div');
+    footer.className = 'tile-footer';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tile-name';
+    nameEl.textContent = p.name;
+    const arrow = document.createElement('span');
+    arrow.className = 'tile-arrow';
+    arrow.textContent = '↗';
+    footer.appendChild(nameEl);
+    footer.appendChild(arrow);
+
+    tile.appendChild(wrap);
+    tile.appendChild(footer);
+    grid.appendChild(tile);
+  });
+})();
+
+// ── Date change listener ───────────────────────────────────
+['property', 'checkIn', 'checkOut'].forEach(id => {
+  document.getElementById(id).addEventListener('change', onDateOrCabinChange);
+});
+
+async function onDateOrCabinChange() {
+  clearErr('property');
+  clearErr('checkIn');
+  clearErr('checkOut');
+
+  const cabin = document.getElementById('property').value;
+  const checkIn = document.getElementById('checkIn').value;
+  const checkOut = document.getElementById('checkOut').value;
+
+  availState.checked = false;
+  availState.available = false;
+  updateSubmitButton();
+
+  if (checkIn && checkOut && checkOut <= checkIn) {
+    showErr('checkOut', 'Check-out must be after check-in.');
+    hideAvailPanel();
+    return;
+  }
+
+  if (!cabin || !checkIn || !checkOut) {
+    hideAvailPanel();
+    return;
+  }
+
+  await runAvailabilityCheck(cabin, checkIn, checkOut);
+}
+
+async function runAvailabilityCheck(cabin, checkIn, checkOut) {
+  if (availState.checking) return;
+  availState.checking = true;
+
+  showCheckingSpinner();
+
+  const result = await apiCall('checkAvailability', {
+    cabin: cabin,
+    checkIn: checkIn,
+    checkOut: checkOut
+  });
+
+  availState.checking = false;
+
+  if (result.error) {
+    showAvailError('Could not check availability: ' + result.error);
+    return;
+  }
+
+  renderAvailability(result);
+}
+
+function renderAvailability(result) {
+  const panel = document.getElementById('availPanel');
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const sel = result.selectedCabin;
+  const cabin = document.getElementById('property').value;
+
+  const selDiv = document.createElement('div');
+  selDiv.className = 'avail-selected ' + (sel.error ? 'err' : sel.available ? 'ok' : 'warn');
+
+  const headline = document.createElement('div');
+  headline.className = 'avail-headline';
+
+  const icon = document.createElement('span');
+  icon.className = 'avail-icon';
+  icon.textContent = sel.error ? '⚠️' : sel.available ? '✅' : '🚫';
+
+  const txt = document.createElement('span');
+  if (sel.error) {
+    txt.textContent = cabin + ': ' + sel.error;
+  } else if (sel.available) {
+    txt.textContent = cabin + ' is fully available for your dates!';
+  } else {
+    txt.textContent = cabin + ' has ' + sel.blockedDates.length + ' blocked night(s).';
+  }
+
+  headline.appendChild(icon);
+  headline.appendChild(txt);
+  selDiv.appendChild(headline);
+
+  if (!sel.error && (sel.freeDates.length > 0 || sel.blockedDates.length > 0)) {
+    const chips = document.createElement('div');
+    chips.className = 'date-chips';
+
+    const allDates = [];
+    (sel.freeDates || []).forEach(d => allDates.push({ d, type: 'free' }));
+    (sel.blockedDates || []).forEach(d => allDates.push({ d, type: 'blocked' }));
+    allDates.sort((a, b) => a.d < b.d ? -1 : 1);
+
+    allDates.forEach(item => {
+      const chip = document.createElement('span');
+      chip.className = 'chip ' + item.type;
+      chip.textContent = formatDateShort(item.d) + (item.type === 'blocked' ? ' ✗' : ' ✓');
+      chips.appendChild(chip);
+    });
+    selDiv.appendChild(chips);
+  }
+
+  panel.appendChild(selDiv);
+
+  if (result.otherCabins && result.otherCabins.length > 0) {
+    const availableOthers = result.otherCabins.filter(c => c.available === true).length;
+
+    const toggleBar = document.createElement('div');
+    toggleBar.className = 'avail-others-toggle open';
+
+    const headingText = sel.available
+      ? 'Other cabins also available — ' + availableOthers + ' option(s)'
+      : 'Looking for alternatives? — ' + availableOthers + ' other cabin(s) available';
+
+    toggleBar.innerHTML = '<span>' + headingText + '</span><span class="toggle-arrow">▾</span>';
+
+    const othersBody = document.createElement('div');
+    othersBody.className = 'avail-others-body open';
+
+    result.otherCabins.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'other-cabin-row';
+
+      const nameRow2 = document.createElement('div');
+      nameRow2.className = 'other-cabin-name';
+
+      const badge = document.createElement('span');
+      if (c.error) {
+        badge.className = 'avail-badge grey';
+        badge.textContent = 'Unknown';
+      } else if (c.available) {
+        badge.className = 'avail-badge ok';
+        badge.textContent = '✓ Available';
+      } else {
+        badge.className = 'avail-badge warn';
+        badge.textContent = c.blockedDates.length + ' night(s) blocked';
+      }
+
+      nameRow2.textContent = c.name + '\u00a0';
+      nameRow2.appendChild(badge);
+      row.appendChild(nameRow2);
+
+      if (!c.error && c.blockedDates && c.blockedDates.length > 0) {
+        const chips2 = document.createElement('div');
+        chips2.className = 'date-chips';
+        c.blockedDates.forEach(d => {
+          const chip = document.createElement('span');
+          chip.className = 'chip blocked';
+          chip.textContent = formatDateShort(d) + ' ✗';
+          chips2.appendChild(chip);
+        });
+        row.appendChild(chips2);
+      }
+
+      othersBody.appendChild(row);
+    });
+
+    toggleBar.addEventListener('click', function() {
+      toggleBar.classList.toggle('open');
+      othersBody.classList.toggle('open');
+    });
+
+    panel.appendChild(toggleBar);
+    panel.appendChild(othersBody);
+  }
+
+  availState.checked = !sel.error;
+  availState.available = sel.available === true;
+  updateSubmitButton();
+}
+
+function showCheckingSpinner() {
+  const panel = document.getElementById('availPanel');
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const checking = document.createElement('div');
+  checking.className = 'avail-checking';
+  checking.innerHTML = '<div class="mini-spin"></div><span>Checking calendar availability…</span>';
+  panel.appendChild(checking);
+
+  updateSubmitButton();
+}
+
+function showAvailError(msg) {
+  const panel = document.getElementById('availPanel');
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const errDiv = document.createElement('div');
+  errDiv.className = 'avail-selected err';
+  errDiv.innerHTML = '<div class="avail-headline"><span class="avail-icon">⚠️</span><span>' + msg + '</span></div>';
+  panel.appendChild(errDiv);
+
+  availState.checked = false;
+  availState.available = false;
+  updateSubmitButton();
+}
+
+function hideAvailPanel() {
+  const panel = document.getElementById('availPanel');
+  panel.classList.remove('visible');
+  panel.innerHTML = '';
+}
+
+function updateSubmitButton() {
+  const btn = document.getElementById('submitBtn');
+  const hint = document.getElementById('submitHint');
+  const txt = document.getElementById('btnText');
+
+  if (availState.checking) {
+    btn.disabled = true;
+    txt.textContent = 'Checking…';
+    hint.textContent = '';
+    return;
+  }
+
+  if (!availState.checked) {
+    btn.disabled = true;
+    txt.textContent = 'Check Availability First';
+    hint.textContent = 'Select a cabin and dates to check availability';
+    return;
+  }
+
+  if (availState.available) {
+    btn.disabled = false;
+    txt.textContent = 'Complete Registration';
+    hint.textContent = '✓ Dates are available — fill in your details and submit';
+  } else {
+    btn.disabled = true;
+    txt.textContent = 'Dates Not Available';
+    hint.textContent = 'Please select a different cabin or date range';
+  }
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById('err-' + id);
+  const inp = document.getElementById(id);
+  if (el) el.textContent = msg;
+  if (inp) inp.classList.add('error');
+}
+
+function clearErr(id) {
+  const el = document.getElementById('err-' + id);
+  const inp = document.getElementById(id);
+  if (el) el.textContent = '';
+  if (inp) inp.classList.remove('error');
+}
+
+function validateEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+}
+
+function validate(data) {
+  let ok = true;
+  ['guestName', 'email', 'property', 'checkIn', 'checkOut'].forEach(f => clearErr(f));
+
+  if (!data.guestName) { showErr('guestName', 'Name is required.'); ok = false; }
+  if (!data.email) { showErr('email', 'Email is required.'); ok = false; }
+  else if (!validateEmail(data.email)) { showErr('email', 'Please enter a valid email address.'); ok = false; }
+  if (!data.property) { showErr('property', 'Please select a cabin.'); ok = false; }
+  if (!data.checkIn) { showErr('checkIn', 'Check-in date is required.'); ok = false; }
+  if (!data.checkOut) { showErr('checkOut', 'Check-out date is required.'); ok = false; }
+  else if (data.checkIn && data.checkOut <= data.checkIn) { showErr('checkOut', 'Check-out must be after check-in.'); ok = false; }
+  if (!availState.available) { showToast('🚫', 'Please select available dates before submitting.', true); ok = false; }
+  return ok;
+}
+
+document.getElementById('email').addEventListener('blur', function() {
+  if (this.value && !validateEmail(this.value)) showErr('email', 'Please enter a valid email address.');
+  else clearErr('email');
+});
+
+document.getElementById('guestForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const data = {
+    guestName: document.getElementById('guestName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    property: document.getElementById('property').value,
+    checkIn: document.getElementById('checkIn').value,
+    checkOut: document.getElementById('checkOut').value
+  };
+
+  if (!validate(data)) return;
+
+  setLoading(true);
+
+  const result = await apiCall('submitReservation', data, 'POST');
+
+  setLoading(false);
+
+  if (result.success) {
+    showSuccess(data);
+  } else {
+    showToast('❌', result.message || 'Something went wrong.', true);
+  }
+});
+
+function setLoading(on) {
+  const btn = document.getElementById('submitBtn');
+  const txt = document.getElementById('btnText');
+  const spin = document.getElementById('btnSpinner');
+  btn.disabled = on;
+  txt.textContent = on ? 'Submitting…' : 'Complete Registration';
+  spin.style.display = on ? 'block' : 'none';
+}
+
+let toastTimer;
+function showToast(icon, msg, isError) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 4500);
+}
+
+function showSuccess(data) {
+  document.getElementById('successName').textContent = data.guestName.split(' ')[0];
+  document.getElementById('successProperty').textContent = data.property;
+  document.getElementById('successEmail').textContent = data.email;
+  document.getElementById('success-overlay').classList.add('show');
+}
+
+function resetForm() {
+  document.getElementById('success-overlay').classList.remove('show');
+  document.getElementById('guestForm').reset();
+  hideAvailPanel();
+  availState.checked = false;
+  availState.available = false;
+  updateSubmitButton();
+  ['guestName', 'email', 'property', 'checkIn', 'checkOut'].forEach(f => clearErr(f));
+}
+
+function formatDateShort(str) {
+  const parts = str.split('-');
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+</script>
+
 </body>
 </html>
