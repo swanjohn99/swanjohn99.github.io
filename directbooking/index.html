@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // ── CONFIGURATION ──────────────────────────────────────
+    // Paste your Google Apps Script deployment URL here.
+    // Get it from: Deploy → Manage Deployments → copy the URL
+    window.DEPLOYMENT_URL = "https://script.google.com/macros/s/AKfycbyMG7_EoKCZQ9y6dYyAFcj2XWdOFDqEPc1RJ2Meax-Xe-nornL5LOHK_XRhwsER7wqD/exec";
+    // ───────────────────────────────────────────────────────
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hudson Getaways — Guest Registration</title>
@@ -407,40 +414,50 @@
 </div>
 
 <script>
-// ── Configuration ──────────────────────────────────────────
-const API_BASE = window.location.origin + '/macros/d/' + 
-  (typeof ScriptApp !== 'undefined' ? 'YOUR_DEPLOYMENT_ID' : '');
-
-// Use URL params to detect if running as web app
-function getAPIBase() {
-  if (typeof google !== 'undefined' && typeof google.script !== 'undefined') {
-    // Running in Google Apps Script context (shouldn't happen with this architecture)
-    return 'local';
-  }
-  // Return the deployment URL for this script
-  return window.location.pathname.split('/')[2];
-}
-
 // ── REST API Calls ─────────────────────────────────────────
 async function apiCall(action, params = {}, method = 'GET') {
-  const scriptUrl = window.location.href.split('?')[0]; // Web app URL
-  
   try {
-    let url = scriptUrl + '?action=' + action;
+    // URL is injected by the server in the HTML head
+    if (!window.DEPLOYMENT_URL) {
+      console.error('[API Error] Deployment URL not injected');
+      return { error: 'Server configuration error' };
+    }
+    
+    let url = window.DEPLOYMENT_URL + '?action=' + action;
+    
+    console.log('[API Call] URL:', url);
     
     if (method === 'GET') {
       for (const [key, value] of Object.entries(params)) {
-        url += '&' + key + '=' + encodeURIComponent(value);
+        url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
       }
+      
       const response = await fetch(url);
-      return await response.json();
+      const text = await response.text();
+      
+      console.log('[API Response] First 100 chars:', text.substring(0, 100));
+      
+      if (text.trim().startsWith('<') || text.trim().startsWith('<!')) {
+        console.error('[API Error] Received HTML instead of JSON');
+        return { error: 'Server error: Received HTML instead of JSON' };
+      }
+      
+      return JSON.parse(text);
     } else { // POST
-      const response = await fetch(scriptUrl, {
+      const response = await fetch(window.DEPLOYMENT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...params })
       });
-      return await response.json();
+      
+      const text = await response.text();
+      
+      if (text.trim().startsWith('<') || text.trim().startsWith('<!')) {
+        console.error('[API Error] Received HTML instead of JSON');
+        return { error: 'Server error: Received HTML instead of JSON' };
+      }
+      
+      return JSON.parse(text);
     }
   } catch (error) {
     console.error('[API Error]', error);
