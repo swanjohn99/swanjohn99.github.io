@@ -6,7 +6,7 @@
         "text_content": {
             "amenities": "Wood-burning stove, Wrap-around deck, High-speed Wi-Fi, Premium coffee bar, Luxury linens, Mini-split AC/Heat.",
             "description": "Escape to this architectural masterpiece. This custom-built A-frame features floor-to-ceiling windows overlooking pristine mountain ridges. Relax by the roaring wood-burning stove or enjoy your morning coffee on the expansive wrap-around deck. Perfect for couples looking for a romantic wilderness getaway with premium amenities.",
-            "details": "Nestled in a quiet mountain pass, just a short 10-minute drive to the nearest hiking trails and local ski resort."
+            "location": "Nestled in a quiet mountain pass, just a short 10-minute drive to the nearest hiking trails and local ski resort."
         }
     },
     {
@@ -16,7 +16,7 @@
         "text_content": {
             "amenities": "Private hot tub, Screened porch, Fire pit, Chef's kitchen, Board games, Washer/Dryer.",
             "description": "A peaceful oasis tucked away next to a babbling creek. Listen to the soothing sounds of water from your private screened-in porch. This cottage combines historic charm with modern luxury, featuring a fully renovated chef's kitchen, exposed wooden beams, and a private outdoor hot tub perfect for stargazing.",
-            "details": "Located on a private lane, offering complete seclusion while remaining only 5 minutes from downtown shopping."
+            "location": "Located on a private lane, offering complete seclusion while remaining only 5 minutes from downtown shopping."
         }
     },
     {
@@ -26,7 +26,7 @@
         "text_content": {
             "amenities": "Exposed brick, Smart TV, Dedicated workspace, Walkable location, Rainfall shower, Bluetooth sound system.",
             "description": "Experience the heartbeat of the town in this beautifully preserved 19th-century loft. Featuring original brick walls, industrial 12-foot ceilings, and hand-selected vintage decor. Steps away from the absolute best local restaurants, artisan coffee shops, boutique shopping, and vibrant nightlife.",
-            "details": "Situated in the historic arts district, offering walkable access to everything the town center has to offer."
+            "location": "Situated in the historic arts district, offering walkable access to everything the town center has to offer."
         }
     },
     {
@@ -36,7 +36,7 @@
         "text_content": {
             "amenities": "Stone fire pit, Hiking trail access, Record player, Board games, BBQ Grill, Cast iron cookware.",
             "description": "Reconnect with nature in this deeply secluded woodland cabin. Surrounded by acres of private forest, this property offers ultimate peace and quiet. Features an outdoor stone fire pit, cozy reading nooks, and a plush king bed. Disconnect from the digital world and recharge your batteries in luxury.",
-            "details": "Hidden deep in the pine forest, accessible by a private gravel road. True off-grid tranquility."
+            "location": "Hidden deep in the pine forest, accessible by a private gravel road. True off-grid tranquility."
         }
     },
     {
@@ -46,7 +46,7 @@
         "text_content": {
             "amenities": "Private dock, 2 Kayaks included, Smart home climate controls, Game room, Patio dining table, EV Charger.",
             "description": "Welcome to your ultimate modern retreat. This striking glass-and-steel chalet sits directly on the water's edge. Enjoy a private dock, complimentary kayaks, and panoramic sunset views over the water. Features an open-concept living area, a game room, and a state-of-the-art climate control system.",
-            "details": "Situated on the sunny northern shore of the lake, giving you the best angles for daily sunset views."
+            "location": "Situated on the sunny northern shore of the lake, giving you the best angles for daily sunset views."
         }
     }
 ]
