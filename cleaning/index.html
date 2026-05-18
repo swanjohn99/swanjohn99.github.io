@@ -82,7 +82,7 @@ header {
 
 @media (min-width:600px) {
   #grid-container {
-    display:grid; grid-template-columns:1fr 1fr;
+    display:grid; grid-template-columns:1fr 1fr 1fr;
     gap:12px 20px; align-items:start;
   }
 }
@@ -215,7 +215,7 @@ header {
       </svg>
       <div>
         <div class="header-title">Cleaning Dashboard</div>
-        <div class="header-sub">14-day rolling window</div>
+        <div class="header-sub">21-day rolling window</div>
       </div>
     </div>
     <div class="header-meta">
@@ -323,7 +323,7 @@ function buildWindow() {
   var dates = [];
   var base  = new Date();
   base.setHours(0, 0, 0, 0);   // local midnight
-  for (var i = 0; i < 14; i++) {
+  for (var i = 0; i < 21; i++) {
     var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
     dates.push(d);
   }
