@@ -1,0 +1,41 @@
+name: Sync Google Sheets Data
+on:
+  repository_dispatch:
+    types: [spreadsheet_update] # Listens for the Google Sheet signal
+
+jobs:
+  deploy-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-with-version: '3.10'
+
+      - name: Process Data and Images
+        env:
+          PAYLOAD_DATA: ${{ toJson(github.event.client_payload.site_data) }}
+        run: |
+          import os
+          import json
+          
+          # 1. Grab raw JSON sent directly from Google Sheet
+          raw_data = os.getenv("PAYLOAD_DATA")
+          data = json.loads(raw_data)
+          
+          # 2. Save it directly as a static data file for your website code
+          with open("listings.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, indent=4, ensure_ascii=False)
+              
+          print("Successfully generated listings.json locally inside GitHub!")
+
+      - name: Commit and Push Changes to GitHub Pages
+        run: |
+          git config --global user.name "GitHub Action Automation"
+          git config --global user.email "actions@github.com"
+          git add listings.json
+          git diff-index --quiet HEAD || git commit -m "Auto-updated website content from Google Sheet"
+          git push
