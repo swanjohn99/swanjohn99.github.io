@@ -2,9 +2,15 @@
     {
         "id": "property_1",
         "images": {
-            "full": [],
-            "medium": [],
-            "thumbnail": []
+            "full": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_plant_house/full_0.jpg"
+            ],
+            "medium": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_plant_house/medium_0.jpg"
+            ],
+            "thumbnail": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_plant_house/thumb_0.jpg"
+            ]
         },
         "name": "The Plant House",
         "text_content": {
@@ -16,9 +22,51 @@
     {
         "id": "property_2",
         "images": {
-            "full": [],
-            "medium": [],
-            "thumbnail": []
+            "full": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_0.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_1.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_2.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_3.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_4.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_5.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_6.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_7.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_8.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_9.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_10.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_11.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/full_12.jpg"
+            ],
+            "medium": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_0.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_1.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_2.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_3.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_4.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_5.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_6.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_7.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_8.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_9.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_10.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_11.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/medium_12.jpg"
+            ],
+            "thumbnail": [
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_0.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_1.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_2.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_3.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_4.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_5.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_6.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_7.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_8.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_9.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_10.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_11.jpg",
+                "https://swanjohn99.github.io/swanjohn99.github.io/images/the_dome_house/thumb_12.jpg"
+            ]
         },
         "name": "The Dome House",
         "text_content": {
