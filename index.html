@@ -554,6 +554,19 @@
             if (e.key === 'Escape') closeLightbox();
         });
 
+        // Resolve image path to a full URL at runtime.
+        // The JSON stores relative paths (e.g. "images/plant_house/medium_0.jpg").
+        // Using window.location we build the correct absolute URL regardless of
+        // hostname, subdirectory, or whether the user is in incognito mode.
+        // Absolute URLs (already starting with http) are passed through unchanged
+        // so old listings.json files with full URLs still work during migration.
+        function resolveImageUrl(path) {
+            if (!path) return '';
+            if (path.startsWith('http://') || path.startsWith('https://')) return path;
+            const base = window.location.href.replace(/\/[^/]*$/, '');
+            return base + '/' + path.replace(/^\//, '');
+        }
+
         // Parse URL for Deep Linking
         function getPropertyIdFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -599,12 +612,14 @@
             const images = property.images || {};
             const textContent = property.text_content || {};
             
-            // Use medium images for display (or full as fallback)
-            const displayImages = images.medium && images.medium.length > 0 ? images.medium : 
-                                  images.full && images.full.length > 0 ? images.full : [];
+            // Use medium images for display (or full as fallback), resolve to absolute URLs
+            const displayImages = (images.medium && images.medium.length > 0 ? images.medium : 
+                                  images.full && images.full.length > 0 ? images.full : [])
+                                  .map(resolveImageUrl);
             
-            // Use full-res images for lightbox
-            const lightboxImages = images.full && images.full.length > 0 ? images.full : displayImages;
+            // Use full-res images for lightbox, resolve to absolute URLs
+            const lightboxImages = (images.full && images.full.length > 0 ? images.full : displayImages)
+                                  .map(resolveImageUrl);
             
             // Extract text content with fallbacks
             const description = textContent.description || 'No description available.';
