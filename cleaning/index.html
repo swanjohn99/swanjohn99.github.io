@@ -11,7 +11,8 @@
      Never inject this from the server — hardcode it here.
      ═══════════════════════════════════════════════════════ -->
 <script>
-  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyBMSJT3WNWd-zu76nlcfSfIRaJ7-zI5-JtPnx2kPiLLTgo-mlzKTlIAk27JPjaGiG2/exec';
+  // ── ONLY LINE TO CHANGE after a new GAS deployment ──
+  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyMG7_EoKCZQ9y6dYyAFcj2XWdOFDqEPc1RJ2Meax-Xe-nornL5LOHK_XRhwsER7wqD/exec';
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -342,55 +343,40 @@ function setStatus(type, msg) {
   dlog(type === 'error' ? 'error' : 'ok', 'Status: ' + msg);
 }
 
-// ── JSONP transport ───────────────────────────────────────────
+// ── API transport (JSONP) ─────────────────────────────────────
 
 /**
- * Makes a JSONP GET request to the GAS API.
- *
- * WHY JSONP NOT fetch()?
- * fetch() from a static host (GitHub Pages, local file) to
- * script.google.com triggers a CORS preflight that GAS cannot
- * satisfy. JSONP uses a <script> tag — never subject to CORS.
- *
- * @param  {string} url  Full URL including ?action= params.
- * @returns {Promise<object>}
+ * JSONP GET request to the GAS API.
+ * Uses a <script> tag — never subject to CORS.
+ * Required because fetch() from a static host to script.google.com
+ * triggers a CORS preflight GAS cannot satisfy.
  */
 function jsonp(url) {
   return new Promise(function(resolve, reject) {
-    var cbName  = 'cb_' + Math.random().toString(36).slice(2);
+    var callbackName = 'cb_' + Math.random().toString(36).slice(2);
     var script  = document.createElement('script');
     var timeout = setTimeout(function() {
       cleanup();
-      reject(new Error('JSONP timeout after 15 s — check DEPLOYMENT_URL and GAS deployment'));
+      reject(new Error('JSONP timeout after 15s'));
     }, 15000);
 
     function cleanup() {
       clearTimeout(timeout);
-      delete window[cbName];
+      delete window[callbackName];
       if (script.parentNode) script.parentNode.removeChild(script);
     }
 
-    window[cbName] = function(data) { cleanup(); resolve(data); };
-    script.onerror  = function()    { cleanup(); reject(new Error('JSONP script load error')); };
-
-    // Append callback param — server must wrap response: cbName({...})
-    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    window[callbackName] = function(data) { cleanup(); resolve(data); };
+    script.onerror = function() { cleanup(); reject(new Error('JSONP script load error')); };
+    script.src = url + '&callback=' + callbackName;
     dlog('verbose', '[JSONP] GET: ' + script.src.substring(0, 100) + '…');
     document.head.appendChild(script);
   });
 }
 
-/**
- * Call the GAS REST API.
- * All calls are GET via JSONP.
- *
- * @param  {string} action  e.g. 'ping', 'data'
- * @param  {object} params  Additional query params (optional)
- * @returns {Promise<object>}
- */
 function apiCall(action, params) {
   if (!window.DEPLOYMENT_URL) {
-    return Promise.reject(new Error('window.DEPLOYMENT_URL is not set'));
+    return Promise.reject(new Error('window.DEPLOYMENT_URL not set'));
   }
   var url = window.DEPLOYMENT_URL + '?action=' + encodeURIComponent(action);
   if (params) {
@@ -608,7 +594,7 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close
 
   var t0 = Date.now();
 
-  apiCall('data')
+  apiCall('cleaning_data')
     .then(function(data) {
       dlog('minimal', 'API response in ' + (Date.now()-t0) + ' ms  server elapsed=' + data.elapsed + ' ms');
       dlog('verbose', 'Full response', data);
