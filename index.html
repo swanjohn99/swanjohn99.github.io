@@ -3,185 +3,693 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boutique Cabin Collection</title>
-    <!-- Tailwind CSS -->
+    <title>Luxury Cabin Rentals - Curated Escapes</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Premium Google Fonts: Lora (Serif for headings) & Inter (Clean sans-serif for body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-serif { font-family: 'Lora', serif; }
-        html { scroll-behavior: smooth; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #fafaf8;
+            color: #1a1a18;
+        }
+
+        .luxury-serif {
+            font-family: 'Georgia', 'Garamond', serif;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            border-bottom: 1px solid #e5e5e0;
+            padding: 2rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        header p {
+            text-align: center;
+            color: #7a7a75;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Lightbox */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .lightbox-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: background 0.3s;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: background 0.3s;
+            z-index: 1001;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .lightbox-nav.prev {
+            left: -70px;
+        }
+
+        .lightbox-nav.next {
+            right: -70px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Property Cards */
+        .property-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e5e0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            scroll-margin-top: 100px;
+        }
+
+        .property-card:hover {
+            border-color: #d0d0ca;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .property-image-gallery {
+            position: relative;
+            width: 100%;
+            padding-bottom: 66.67%;
+            background: #f5f5f0;
+            overflow: hidden;
+        }
+
+        .property-image-gallery img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .property-image-gallery img:hover {
+            transform: scale(1.05);
+        }
+
+        .image-counter {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+
+        .property-content {
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .property-name {
+            font-size: 1.75rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #1a1a18;
+        }
+
+        .property-location {
+            color: #7a7a75;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .property-location::before {
+            content: "📍";
+            font-size: 1rem;
+        }
+
+        .property-description {
+            color: #4a4a47;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        .property-amenities {
+            margin-bottom: 1.5rem;
+        }
+
+        .amenities-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #7a7a75;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .amenity-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .amenity-tag {
+            background: #f5f5f0;
+            border: 1px solid #e5e5e0;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #4a4a47;
+            transition: all 0.3s;
+        }
+
+        .amenity-tag:hover {
+            background: #efefea;
+            border-color: #d0d0ca;
+        }
+
+        .property-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d0d0ca;
+            border-radius: 6px;
+            background: white;
+            color: #1a1a18;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #f5f5f0;
+            border-color: #4a4a47;
+        }
+
+        .btn-primary {
+            background: #1a1a18;
+            color: white;
+            border-color: #1a1a18;
+        }
+
+        .btn-primary:hover {
+            background: #2a2a28;
+            border-color: #2a2a28;
+        }
+
+        /* Error States */
+        .error-state {
+            text-align: center;
+            padding: 2rem;
+            color: #7a7a75;
+        }
+
+        .error-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            border: 3px solid #e5e5e0;
+            border-top-color: #1a1a18;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Image loading placeholder */
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #e8e8e3 25%, #f5f5f0 50%, #e8e8e3 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .property-content {
+                padding: 1.5rem;
+            }
+
+            .property-name {
+                font-size: 1.35rem;
+            }
+
+            .lightbox-nav {
+                width: 40px;
+                height: 40px;
+                font-size: 1.25rem;
+            }
+
+            .lightbox-nav.prev {
+                left: -50px;
+            }
+
+            .lightbox-nav.next {
+                right: -50px;
+            }
+
+            .lightbox-close {
+                top: -35px;
+                width: 35px;
+                height: 35px;
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .lightbox-nav {
+                display: none;
+            }
+
+            .lightbox-counter {
+                bottom: -30px;
+                font-size: 0.8rem;
+            }
+
+            .amenity-tags {
+                gap: 6px;
+            }
+
+            .amenity-tag {
+                font-size: 0.8rem;
+                padding: 5px 12px;
+            }
+        }
+
+        /* No Images Fallback */
+        .no-images {
+            width: 100%;
+            padding-bottom: 66.67%;
+            background: linear-gradient(135deg, #f5f5f0 0%, #e8e8e3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7a7a75;
+            position: relative;
+            min-height: 300px;
+        }
+
+        /* Grid Layout */
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            padding: 3rem 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .properties-grid {
+                grid-template-columns: 1fr;
+                padding: 2rem 1rem;
+            }
+        }
     </style>
 </head>
-<body class="bg-[#FBFBFA] text-[#2C302E]">
-
-    <!-- Transparent Luxury Navigation Bar -->
-    <nav class="absolute top-0 left-0 right-0 z-20 max-w-7xl mx-auto px-6 py-6 flex justify-between items-center text-white">
-        <span class="font-serif italic text-xl tracking-wide">The Cabin Collection</span>
-        <a href="#explore" class="border border-white/40 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-medium tracking-wider uppercase hover:bg-white hover:text-black transition duration-300">
-            Explore Stays
-        </a>
-    </nav>
-
-    <!-- Editorial Hero Section -->
-    <header class="relative h-screen flex items-center justify-center text-center px-4 overflow-hidden">
-        <!-- Deep forest fallback image overlaid with moody dark olive/black gradient -->
-        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-105 transition duration-1000" style="background-image: url('https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=2000');"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-[#FBFBFA]"></div>
-        
-        <div class="relative z-10 max-w-4xl mx-auto mt-12">
-            <span class="text-xs font-medium uppercase tracking-[0.3em] text-stone-300 mb-4 block">Slow Down. Breathe. Disconnect.</span>
-            <h1 class="font-serif text-5xl md:text-7xl text-white font-normal leading-[1.15] mb-6">
-                Five architect-designed <br><span class="italic text-stone-200">cabins in the woods</span>.
-            </h1>
-            <p class="text-stone-300 max-w-lg mx-auto font-light text-sm md:text-base leading-relaxed mb-10">
-                A curated collection of secluded short-term rentals designed to immerse you in nature without sacrificing an ounce of luxury.
-            </p>
-            <a href="#explore" class="inline-block bg-[#2C302E] text-white hover:bg-[#3D4240] text-xs font-medium tracking-[0.2em] uppercase px-8 py-4 rounded-none shadow-xl transition duration-300">
-                Begin Your Journey
-            </a>
-        </div>
+<body>
+    <header>
+        <h1 class="luxury-serif">Curated Escapes</h1>
+        <p>Handpicked luxury retreats for discerning travelers</p>
     </header>
 
-    <!-- Introduction Statement -->
-    <section id="explore" class="max-w-3xl mx-auto text-center px-6 py-24 md:py-32">
-        <span class="text-xs font-semibold text-[#5A635E] uppercase tracking-widest block mb-4">Our Philosophy</span>
-        <h2 class="font-serif text-3xl md:text-4xl font-normal text-[#1F2221] leading-snug">
-            "Space, light, and quiet. We believe true luxury isn't about excess—it's about removing distractions so you can reconnect with what matters."
-        </h2>
-    </section>
-
-    <!-- Properties Stream Section -->
-    <main class="max-w-6xl mx-auto px-6 pb-32">
-        
-        <!-- Premium Loading Animation -->
-        <div id="loading" class="text-center py-24">
-            <div class="inline-block w-8 h-8 border-2 border-[#2C302E]/20 border-t-[#2C302E] rounded-full animate-spin mb-4"></div>
-            <p class="font-serif italic text-stone-500">Preparing your escape...</p>
-        </div>
-
-        <!-- Asymmetric Dynamic Container -->
-        <div id="properties-container" class="space-y-32 md:space-y-48 hidden">
-            <!-- JavaScript dynamically injects editorial cards here -->
+    <main id="main-content">
+        <div class="properties-grid" id="properties-container">
+            <div class="loading-spinner"></div>
         </div>
     </main>
 
-    <!-- Grounded Minimal Footer -->
-    <footer class="bg-[#1F2221] text-stone-400 py-16 px-6 border-t border-stone-800">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="text-center md:text-left">
-                <span class="font-serif italic text-white text-xl block mb-2">The Cabin Collection</span>
-                <p class="text-xs text-stone-500 font-light tracking-wide">Upstate Escape Portfolio • Verified Host</p>
-            </div>
-            <div class="text-center md:text-right text-xs space-y-2">
-                <p>&copy; 2026 The Cabin Collection. All rights reserved.</p>
-                <p class="text-stone-600 font-light">Powered directly by Google Sheets & GitHub Edge Servers.</p>
-            </div>
+    <!-- Lightbox -->
+    <div class="lightbox-overlay" id="lightbox-overlay">
+        <div class="lightbox-content" id="lightbox-content">
+            <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">✕</button>
+            <button class="lightbox-nav prev" id="lightbox-prev" aria-label="Previous image">❮</button>
+            <img id="lightbox-image" src="" alt="Property image">
+            <button class="lightbox-nav next" id="lightbox-next" aria-label="Next image">❯</button>
+            <div class="lightbox-counter" id="lightbox-counter"></div>
         </div>
-    </footer>
+    </div>
 
-    <!-- Frontend Core Engine Script -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            fetch('./listings.json')
-                .then(response => {
-                    if (!response.ok) throw new Error("Could not find listings file.");
-                    return response.json();
-                })
-                .then(properties => {
-                    const container = document.getElementById('properties-container');
-                    const loadingText = document.getElementById('loading');
-                    
-                    properties.forEach((property, index) => {
-                        const isEven = index % 2 === 0;
-                        const mainImage = property.images && property.images.length > 0 
-                            ? property.images[0] 
-                            : 'https://images.unsplash.com/photo-1549693578-d683be217e58?w=1200';
+        // Lightbox State
+        let lightboxState = {
+            isOpen: false,
+            currentImages: [],
+            currentIndex: 0,
+            propertyName: ''
+        };
 
-                        // Build mini minimalist image strip underneath main display
-                        let thumbHTML = '';
-                        if (property.images && property.images.length > 1) {
-                            thumbHTML = `
-                                <div class="flex gap-3 overflow-x-auto mt-4 pb-2 scrollbar-none">
-                                    ${property.images.map((imgUrl, i) => `
-                                        <div class="flex-shrink-0 w-20 h-14 md:w-28 md:h-20 overflow-hidden cursor-pointer bg-stone-100 border ${i === 0 ? 'border-[#2C302E]' : 'border-transparent'}" onclick="
-                                            this.closest('.property-block').querySelector('.main-display').src='${imgUrl}';
-                                            Array.from(this.parentNode.children).forEach(c => c.classList.remove('border-[#2C302E]'));
-                                            this.classList.add('border-[#2C302E]');
-                                         shadow-sm hover:opacity-90">
-                                            <img src="${imgUrl}" class="w-full h-full object-cover">
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `;
-                        }
+        // DOM Elements
+        const container = document.getElementById('properties-container');
+        const overlay = document.getElementById('lightbox-overlay');
+        const image = document.getElementById('lightbox-image');
+        const closeBtn = document.getElementById('lightbox-close');
+        const prevBtn = document.getElementById('lightbox-prev');
+        const nextBtn = document.getElementById('lightbox-next');
+        const counter = document.getElementById('lightbox-counter');
 
-                        // Generate layout matching top boutique architectural portfolios
-                        const propertyHTML = `
-                            <div class="property-block flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-12 lg:gap-16 items-start">
-                                
-                                <!-- Frame Image Layout -->
-                                <div class="w-full lg:w-[55%]">
-                                    <div class="overflow-hidden bg-stone-100 shadow-sm aspect-[4/3] md:aspect-[16/10]">
-                                        <img src="${mainImage}" alt="${property.name}" class="main-display w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]">
-                                    </div>
-                                    ${thumbHTML}
-                                </div>
+        // Lightbox Functions
+        function openLightbox(images, propertyName, index = 0) {
+            lightboxState.currentImages = images;
+            lightboxState.currentIndex = index;
+            lightboxState.propertyName = propertyName;
+            lightboxState.isOpen = true;
+            updateLightboxImage();
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
 
-                                <!-- Narrative & Details Typography Grid -->
-                                <div class="w-full lg:w-[45%] flex flex-col justify-between self-stretch py-2">
-                                    <div>
-                                        <span class="text-xs tracking-[0.25em] text-[#5A635E] font-medium uppercase mb-3 block">
-                                            ${property.text_content.section_4 || 'Catskills, NY'}
-                                        </span>
-                                        <h3 class="font-serif text-3xl md:text-4xl text-[#1F2221] font-normal tracking-wide mb-6">
-                                            ${property.name}
-                                        </h3>
-                                        
-                                        <!-- Styled 5000-character description parsing -->
-                                        <p class="text-[#4E5451] font-light text-sm md:text-base leading-relaxed tracking-wide mb-8 whitespace-pre-line">
-                                            ${property.text_content.section_3 || 'Description incoming.'}
-                                        </p>
-                                        
-                                        <!-- Minimalist Highlights Chips -->
-                                        <div class="mb-10">
-                                            <span class="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-3">Cabin Inclusions</span>
-                                            <div class="flex flex-wrap gap-x-4 gap-y-2">
-                                                ${(property.text_content.section_5 || '').split(',').map(item => {
-                                                    if(!item.trim()) return '';
-                                                    return `<span class="text-xs text-[#2C302E] font-medium border-b border-stone-200 pb-1">${item.trim()}</span>`;
-                                                }).join('')}
-                                            </div>
-                                        </div>
-                                    </div>
+        function closeLightbox() {
+            lightboxState.isOpen = false;
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
 
-                                    <!-- Editorial Style CTA Link Button -->
-                                    <div>
-                                        <a href="#" class="inline-block bg-[#2C302E] text-white hover:bg-stone-800 text-center text-xs tracking-widest uppercase font-medium px-8 py-4 transition w-full sm:w-auto shadow-md">
-                                            Request Stay
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        container.innerHTML += propertyHTML;
-                    });
+        function updateLightboxImage() {
+            if (lightboxState.currentImages.length === 0) return;
 
-                    loadingText.classList.add('hidden');
-                    container.classList.remove('hidden');
-                })
-                .catch(error => {
-                    console.error(error);
-                    document.getElementById('loading').innerHTML = `
-                        <p class="font-serif text-red-700 tracking-wide">⚠️ Error mapping live data stream. Verify your listings.json file via GitHub Actions.</p>
-                    `;
-                });
+            const img = lightboxState.currentImages[lightboxState.currentIndex];
+            image.src = img;
+            image.alt = `${lightboxState.propertyName} - Image ${lightboxState.currentIndex + 1}`;
+            counter.textContent = `${lightboxState.currentIndex + 1} / ${lightboxState.currentImages.length}`;
+        }
+
+        function nextImage() {
+            lightboxState.currentIndex = (lightboxState.currentIndex + 1) % lightboxState.currentImages.length;
+            updateLightboxImage();
+        }
+
+        function prevImage() {
+            lightboxState.currentIndex = (lightboxState.currentIndex - 1 + lightboxState.currentImages.length) % lightboxState.currentImages.length;
+            updateLightboxImage();
+        }
+
+        // Event Listeners
+        closeBtn.addEventListener('click', closeLightbox);
+        nextBtn.addEventListener('click', nextImage);
+        prevBtn.addEventListener('click', prevImage);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeLightbox();
         });
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (!lightboxState.isOpen) return;
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // Parse URL for Deep Linking
+        function getPropertyIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('property');
+        }
+
+        // Fetch and Render Data
+        async function initializeWebsite() {
+            try {
+                const response = await fetch('listings.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    showError('No properties available. Check listings.json.');
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach((property, index) => {
+                    renderPropertyCard(property, index);
+                });
+
+                // Handle deep linking
+                const propertyId = getPropertyIdFromUrl();
+                if (propertyId) {
+                    setTimeout(() => {
+                        const element = document.getElementById(`property-${propertyId}`);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error loading listings:', error);
+                showError(`Failed to load listings: ${error.message}`);
+            }
+        }
+
+        function renderPropertyCard(property, index) {
+            // Validate required fields
+            const name = property.name || 'Untitled Property';
+            const images = property.images || {};
+            const textContent = property.text_content || {};
+            
+            // Use medium images for display (or full as fallback)
+            const displayImages = images.medium && images.medium.length > 0 ? images.medium : 
+                                  images.full && images.full.length > 0 ? images.full : [];
+            
+            // Use full-res images for lightbox
+            const lightboxImages = images.full && images.full.length > 0 ? images.full : displayImages;
+            
+            // Extract text content with fallbacks
+            const description = textContent.description || 'No description available.';
+            const location = textContent.location || 'Location not specified';
+            const amenitiesStr = textContent.amenities || '';
+            const amenities = amenitiesStr ? amenitiesStr.split(',').map(a => a.trim()).filter(a => a) : [];
+
+            const propertyId = `property_${index}`;
+            const card = document.createElement('article');
+            card.className = 'property-card';
+            card.id = propertyId;
+
+            // Image Gallery HTML
+            let imageGalleryHTML = '';
+            if (displayImages.length > 0) {
+                imageGalleryHTML = `
+                    <div class="property-image-gallery">
+                        <img 
+                            src="${displayImages[0]}" 
+                            alt="${name} - Primary Image"
+                            loading="lazy"
+                            onclick="openLightbox(${JSON.stringify(lightboxImages).replace(/"/g, '&quot;')}, '${name.replace(/'/g, "\\'")}', 0)"
+                        >
+                        <div class="image-counter">${displayImages.length} photo${displayImages.length !== 1 ? 's' : ''}</div>
+                    </div>
+                `;
+            } else {
+                imageGalleryHTML = `
+                    <div class="property-image-gallery">
+                        <div class="no-images">
+                            <span>📷 No images available</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Amenities HTML
+            let amenitiesHTML = '';
+            if (amenities.length > 0) {
+                amenitiesHTML = `
+                    <div class="property-amenities">
+                        <span class="amenities-label">Amenities</span>
+                        <div class="amenity-tags">
+                            ${amenities.map(a => `<span class="amenity-tag">${a}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                ${imageGalleryHTML}
+                <div class="property-content">
+                    <h2 class="property-name">${name}</h2>
+                    <p class="property-location">${location}</p>
+                    <p class="property-description">${description}</p>
+                    ${amenitiesHTML}
+                    <div class="property-actions">
+                        ${displayImages.length > 0 ? `
+                            <button class="btn btn-secondary" onclick="openLightbox(${JSON.stringify(lightboxImages).replace(/"/g, '&quot;')}, '${name.replace(/'/g, "\\'")}', 0)">
+                                <i class="fas fa-images"></i> View Gallery
+                            </button>
+                        ` : ''}
+                        <a href="?property=${index}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right"></i> Learn More
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(card);
+        }
+
+        function showError(message) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeWebsite);
     </script>
 </body>
 </html>
