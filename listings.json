@@ -1,7 +1,11 @@
 [
     {
         "id": "property_1",
-        "images": [],
+        "images": {
+            "full": [],
+            "medium": [],
+            "thumbnail": []
+        },
         "name": "The Plant House",
         "text_content": {
             "amenities": "Wood-burning stove, Wrap-around deck, High-speed Wi-Fi, Premium coffee bar, Luxury linens, Mini-split AC/Heat.",
@@ -11,7 +15,11 @@
     },
     {
         "id": "property_2",
-        "images": [],
+        "images": {
+            "full": [],
+            "medium": [],
+            "thumbnail": []
+        },
         "name": "The Dome House",
         "text_content": {
             "amenities": "Private hot tub, Screened porch, Fire pit, Chef's kitchen, Board games, Washer/Dryer.",
@@ -21,7 +29,11 @@
     },
     {
         "id": "property_3",
-        "images": [],
+        "images": {
+            "full": [],
+            "medium": [],
+            "thumbnail": []
+        },
         "name": "The Stargazer",
         "text_content": {
             "amenities": "Exposed brick, Smart TV, Dedicated workspace, Walkable location, Rainfall shower, Bluetooth sound system.",
@@ -31,7 +43,11 @@
     },
     {
         "id": "property_4",
-        "images": [],
+        "images": {
+            "full": [],
+            "medium": [],
+            "thumbnail": []
+        },
         "name": "Venster",
         "text_content": {
             "amenities": "Stone fire pit, Hiking trail access, Record player, Board games, BBQ Grill, Cast iron cookware.",
@@ -41,7 +57,11 @@
     },
     {
         "id": "property_5",
-        "images": [],
+        "images": {
+            "full": [],
+            "medium": [],
+            "thumbnail": []
+        },
         "name": "Catskill and Chill",
         "text_content": {
             "amenities": "Private dock, 2 Kayaks included, Smart home climate controls, Game room, Patio dining table, EV Charger.",
