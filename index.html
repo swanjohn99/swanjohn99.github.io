@@ -1,635 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>Cleaning Dashboard</title>
-
-<!-- ═══════════════════════════════════════════════════════
-     DEPLOYMENT URL — THE ONLY LINE YOU EVER NEED TO CHANGE
-     Update this when you create a new GAS deployment.
-     Never inject this from the server — hardcode it here.
-     ═══════════════════════════════════════════════════════ -->
-<script>
-  // ── ONLY LINE TO CHANGE after a new GAS deployment ──
-  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyBMSJT3WNWd-zu76nlcfSfIRaJ7-zI5-JtPnx2kPiLLTgo-mlzKTlIAk27JPjaGiG2/exec';
-</script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-
-<style>
-/* ── tokens ── */
-:root {
-  --bg:           #0f1117;
-  --surface:      #181c27;
-  --surface2:     #1f2436;
-  --border:       #2a3050;
-  --accent:       #3d8ef8;
-  --accent-dim:   #1e4a8c;
-  --danger:       #ff3b55;
-  --danger-glow:  rgba(255,59,85,.35);
-  --text-primary: #e8ecf4;
-  --text-muted:   #6b7799;
-  --text-dim:     #3d4a6b;
-  --checkout-col: #f59e0b;
-  --checkin-col:  #22d3a5;
-  --radius:       10px;
-  --radius-sm:    6px;
-  --font-mono:    'JetBrains Mono','Fira Code','Courier New',monospace;
-  --font-ui:      'DM Sans','Segoe UI',sans-serif;
-}
-
-/* ── reset ── */
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html,body { height:100%; background:var(--bg); color:var(--text-primary); font-family:var(--font-ui); }
-
-/* ── app shell ── */
-#app { display:flex; flex-direction:column; min-height:100%; }
-
-/* ── header ── */
-header {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 20px 12px;
-  border-bottom:1px solid var(--border);
-  background:var(--surface);
-  position:sticky; top:0; z-index:100;
-}
-.header-brand { display:flex; align-items:center; gap:10px; }
-.header-title { font-size:15px; font-weight:600; letter-spacing:.02em; }
-.header-sub   { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
-.header-meta  { text-align:right; }
-.today-label  { font-size:12px; color:var(--text-muted); margin-bottom:2px; }
-.today-date   { font-size:14px; font-weight:600; color:var(--accent); font-family:var(--font-mono); }
-
-/* ── status bar ── */
-#status-bar {
-  display:flex; align-items:center; gap:10px;
-  padding:10px 20px; font-size:13px; color:var(--text-muted);
-  border-bottom:1px solid var(--border); transition:background .3s;
-}
-#status-bar.error { background:rgba(255,59,85,.08); color:var(--danger); }
-#status-bar.ok    { background:rgba(34,211,165,.06); color:var(--checkin-col); }
-#status-spinner {
-  width:14px; height:14px; flex-shrink:0;
-  border:2px solid var(--border); border-top-color:var(--accent);
-  border-radius:50%; animation:spin .7s linear infinite;
-}
-@keyframes spin { to { transform:rotate(360deg); } }
-
-/* ── grid ── */
-#grid-container { flex:1; padding:16px 20px; }
-
-@media (min-width:600px) {
-  #grid-container {
-    display:grid; grid-template-columns:1fr 1fr 1fr;
-    gap:12px 20px; align-items:start;
-  }
-}
-@media (max-width:599px) {
-  #grid-container {
-    display:flex; flex-direction:column; gap:10px;
-    -webkit-overflow-scrolling:touch;
-  }
-}
-
-/* ── day row ── */
-.day-row {
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius); overflow:hidden;
-  cursor:pointer; transition:border-color .15s, box-shadow .15s;
-  user-select:none; -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-.day-row:hover     { border-color:var(--accent-dim); box-shadow:0 0 0 1px var(--accent-dim); }
-.day-row:active    { opacity:.85; }
-.day-row.today-row { border-color:var(--accent); }
-.day-row.empty-row { opacity:.4; pointer-events:none; }
-
-/* ── day header ── */
-.day-header {
-  display:flex; align-items:baseline; gap:8px;
-  padding:10px 14px 8px; border-bottom:1px solid var(--border);
-}
-.day-num   { font-size:22px; font-weight:600; font-family:var(--font-mono); line-height:1; }
-.day-name  { font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
-.day-month { font-size:11px; color:var(--text-dim); font-family:var(--font-mono); margin-left:auto; }
-.today-tag {
-  font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--accent); background:rgba(61,142,248,.12);
-  border:1px solid rgba(61,142,248,.25); padding:1px 6px; border-radius:3px;
-}
-.empty-day-label { font-size:11px; color:var(--text-dim); padding:10px 14px; font-style:italic; }
-
-/* ── tile tray ── */
-.tile-tray {
-  display:flex; flex-wrap:wrap; gap:8px;
-  padding:10px 14px 12px; -webkit-overflow-scrolling:touch;
-}
-
-/* ── property tile ── */
-.prop-tile {
-  display:flex; align-items:center; gap:7px;
-  padding:7px 10px; background:var(--surface2);
-  border:1px solid var(--border); border-radius:var(--radius-sm); min-width:80px;
-}
-.tile-icon-wrap {
-  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
-  border-radius:6px; background:var(--surface); font-size:17px; flex-shrink:0;
-  transition:background .2s;
-}
-.prop-tile.alert .tile-icon-wrap {
-  background:var(--danger);
-  animation:flashAlert 1.2s ease-in-out infinite alternate;
-}
-@keyframes flashAlert {
-  from { background:var(--danger); box-shadow:0 0 6px var(--danger-glow); }
-  to   { background:#cc1e35;       box-shadow:0 0 14px var(--danger-glow); }
-}
-.tile-code { font-family:var(--font-mono); font-size:12px; font-weight:600; letter-spacing:.05em; }
-
-/* ── modal ── */
-#modal-backdrop {
-  display:none; position:fixed; inset:0; z-index:500;
-  background:rgba(5,7,15,.8); backdrop-filter:blur(4px);
-  -webkit-backdrop-filter:blur(4px);
-  align-items:center; justify-content:center;
-}
-#modal-backdrop.open { display:flex; }
-#modal {
-  background:var(--surface); border:1px solid var(--border); border-radius:14px;
-  width:min(480px,calc(100vw - 32px)); max-height:calc(100vh - 80px);
-  display:flex; flex-direction:column; overflow:hidden;
-  box-shadow:0 20px 60px rgba(0,0,0,.7);
-}
-#modal-header {
-  padding:16px 20px 14px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:12px;
-}
-#modal-date-num   { font-size:36px; font-weight:700; font-family:var(--font-mono); line-height:1; }
-#modal-date-info  { flex:1; }
-#modal-date-label { font-size:14px; font-weight:500; }
-#modal-date-month { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
-#modal-close {
-  width:30px; height:30px; border-radius:50%;
-  background:var(--surface2); border:1px solid var(--border);
-  color:var(--text-muted); font-size:16px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:background .15s, color .15s;
-}
-#modal-close:hover { background:var(--danger); color:#fff; }
-#modal-body {
-  overflow-y:auto; flex:1; padding:14px 20px 20px;
-  -webkit-overflow-scrolling:touch;
-}
-.modal-card {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:var(--radius); padding:12px 16px; margin-bottom:10px;
-  display:flex; align-items:flex-start; gap:12px;
-}
-.modal-card.rank-1 { border-left:3px solid var(--danger); }
-.modal-card.rank-2 { border-left:3px solid var(--checkout-col); }
-.modal-card.rank-3 { border-left:3px solid var(--checkin-col); }
-.modal-icon      { font-size:22px; padding-top:2px; }
-.modal-info      { flex:1; }
-.modal-full-name { font-size:13px; font-weight:500; margin-bottom:6px; }
-.modal-tags      { display:flex; gap:6px; flex-wrap:wrap; }
-.tag { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 8px; border-radius:3px; }
-.tag-out  { background:rgba(245,158,11,.15); color:var(--checkout-col); border:1px solid rgba(245,158,11,.3); }
-.tag-in   { background:rgba(34,211,165,.12); color:var(--checkin-col);  border:1px solid rgba(34,211,165,.25); }
-.tag-same { background:rgba(255,59,85,.15);  color:var(--danger);       border:1px solid rgba(255,59,85,.3); }
-.modal-empty { text-align:center; color:var(--text-muted); font-size:13px; padding:30px 0; font-style:italic; }
-
-/* ── debug panel ── */
-#debug-panel { display:none; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique Cabin Collection</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Premium Google Fonts: Lora (Serif for headings) & Inter (Clean sans-serif for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Lora', serif; }
+        html { scroll-behavior: smooth; }
+    </style>
 </head>
-<body>
+<body class="bg-[#FBFBFA] text-[#2C302E]">
 
-<div id="app">
-  <header>
-    <div class="header-brand">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3d8ef8" stroke-width="1.8">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-      <div>
-        <div class="header-title">Cleaning Dashboard</div>
-        <div class="header-sub">21-day rolling window</div>
-      </div>
-    </div>
-    <div class="header-meta">
-      <div class="today-label">Today</div>
-      <div class="today-date" id="header-today"></div>
-    </div>
-  </header>
+    <!-- Transparent Luxury Navigation Bar -->
+    <nav class="absolute top-0 left-0 right-0 z-20 max-w-7xl mx-auto px-6 py-6 flex justify-between items-center text-white">
+        <span class="font-serif italic text-xl tracking-wide">The Cabin Collection</span>
+        <a href="#explore" class="border border-white/40 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-medium tracking-wider uppercase hover:bg-white hover:text-black transition duration-300">
+            Explore Stays
+        </a>
+    </nav>
 
-  <div id="status-bar">
-    <div id="status-spinner"></div>
-    <span id="status-text">Connecting to server…</span>
-  </div>
+    <!-- Editorial Hero Section -->
+    <header class="relative h-screen flex items-center justify-center text-center px-4 overflow-hidden">
+        <!-- Deep forest fallback image overlaid with moody dark olive/black gradient -->
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-105 transition duration-1000" style="background-image: url('https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=2000');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-[#FBFBFA]"></div>
+        
+        <div class="relative z-10 max-w-4xl mx-auto mt-12">
+            <span class="text-xs font-medium uppercase tracking-[0.3em] text-stone-300 mb-4 block">Slow Down. Breathe. Disconnect.</span>
+            <h1 class="font-serif text-5xl md:text-7xl text-white font-normal leading-[1.15] mb-6">
+                Five architect-designed <br><span class="italic text-stone-200">cabins in the woods</span>.
+            </h1>
+            <p class="text-stone-300 max-w-lg mx-auto font-light text-sm md:text-base leading-relaxed mb-10">
+                A curated collection of secluded short-term rentals designed to immerse you in nature without sacrificing an ounce of luxury.
+            </p>
+            <a href="#explore" class="inline-block bg-[#2C302E] text-white hover:bg-[#3D4240] text-xs font-medium tracking-[0.2em] uppercase px-8 py-4 rounded-none shadow-xl transition duration-300">
+                Begin Your Journey
+            </a>
+        </div>
+    </header>
 
-  <div id="grid-container"></div>
-</div>
+    <!-- Introduction Statement -->
+    <section id="explore" class="max-w-3xl mx-auto text-center px-6 py-24 md:py-32">
+        <span class="text-xs font-semibold text-[#5A635E] uppercase tracking-widest block mb-4">Our Philosophy</span>
+        <h2 class="font-serif text-3xl md:text-4xl font-normal text-[#1F2221] leading-snug">
+            "Space, light, and quiet. We believe true luxury isn't about excess—it's about removing distractions so you can reconnect with what matters."
+        </h2>
+    </section>
 
-<!-- modal -->
-<div id="modal-backdrop" role="dialog" aria-modal="true">
-  <div id="modal">
-    <div id="modal-header">
-      <div id="modal-date-num">—</div>
-      <div id="modal-date-info">
-        <div id="modal-date-label">—</div>
-        <div id="modal-date-month">—</div>
-      </div>
-      <button id="modal-close" aria-label="Close">✕</button>
-    </div>
-    <div id="modal-body"></div>
-  </div>
-</div>
+    <!-- Properties Stream Section -->
+    <main class="max-w-6xl mx-auto px-6 pb-32">
+        
+        <!-- Premium Loading Animation -->
+        <div id="loading" class="text-center py-24">
+            <div class="inline-block w-8 h-8 border-2 border-[#2C302E]/20 border-t-[#2C302E] rounded-full animate-spin mb-4"></div>
+            <p class="font-serif italic text-stone-500">Preparing your escape...</p>
+        </div>
 
-<!-- debug panel: shown only when server returns debugMode != 'off' -->
-<div id="debug-panel"></div>
+        <!-- Asymmetric Dynamic Container -->
+        <div id="properties-container" class="space-y-32 md:space-y-48 hidden">
+            <!-- JavaScript dynamically injects editorial cards here -->
+        </div>
+    </main>
 
-<script>
-'use strict';
+    <!-- Grounded Minimal Footer -->
+    <footer class="bg-[#1F2221] text-stone-400 py-16 px-6 border-t border-stone-800">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <span class="font-serif italic text-white text-xl block mb-2">The Cabin Collection</span>
+                <p class="text-xs text-stone-500 font-light tracking-wide">Upstate Escape Portfolio • Verified Host</p>
+            </div>
+            <div class="text-center md:text-right text-xs space-y-2">
+                <p>&copy; 2026 The Cabin Collection. All rights reserved.</p>
+                <p class="text-stone-600 font-light">Powered directly by Google Sheets & GitHub Edge Servers.</p>
+            </div>
+        </div>
+    </footer>
 
-// ── debug ────────────────────────────────────────────────────
-var _debugMode = 'off';
+    <!-- Frontend Core Engine Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('./listings.json')
+                .then(response => {
+                    if (!response.ok) throw new Error("Could not find listings file.");
+                    return response.json();
+                })
+                .then(properties => {
+                    const container = document.getElementById('properties-container');
+                    const loadingText = document.getElementById('loading');
+                    
+                    properties.forEach((property, index) => {
+                        const isEven = index % 2 === 0;
+                        const mainImage = property.images && property.images.length > 0 
+                            ? property.images[0] 
+                            : 'https://images.unsplash.com/photo-1549693578-d683be217e58?w=1200';
 
-function initDebug(mode) {
-  _debugMode = mode || 'off';
-  if (_debugMode === 'off') return;
-  var panel = document.getElementById('debug-panel');
-  panel.style.cssText =
-    'display:block;position:fixed;bottom:0;left:0;right:0;z-index:9000;' +
-    'background:rgba(0,0,0,.93);border-top:1px solid #2a5a2a;' +
-    'font-family:monospace;font-size:11px;max-height:200px;overflow-y:auto;' +
-    'padding:6px 12px 10px;line-height:1.7;';
-  document.getElementById('app').style.paddingBottom = '220px';
-  dlog('ok', 'Debug mode: ' + _debugMode + '  |  DEPLOYMENT_URL set: ' + !!window.DEPLOYMENT_URL);
-}
+                        // Build mini minimalist image strip underneath main display
+                        let thumbHTML = '';
+                        if (property.images && property.images.length > 1) {
+                            thumbHTML = `
+                                <div class="flex gap-3 overflow-x-auto mt-4 pb-2 scrollbar-none">
+                                    ${property.images.map((imgUrl, i) => `
+                                        <div class="flex-shrink-0 w-20 h-14 md:w-28 md:h-20 overflow-hidden cursor-pointer bg-stone-100 border ${i === 0 ? 'border-[#2C302E]' : 'border-transparent'}" onclick="
+                                            this.closest('.property-block').querySelector('.main-display').src='${imgUrl}';
+                                            Array.from(this.parentNode.children).forEach(c => c.classList.remove('border-[#2C302E]'));
+                                            this.classList.add('border-[#2C302E]');
+                                         shadow-sm hover:opacity-90">
+                                            <img src="${imgUrl}" class="w-full h-full object-cover">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        }
 
-function dlog(level, msg, data) {
-  if (_debugMode === 'off') return;
-  if (_debugMode === 'minimal' && level === 'verbose') return;
-  if (data !== undefined) { try { msg += '  →  ' + JSON.stringify(data); } catch(e) {} }
-  var colors = { verbose:'#a78bfa', minimal:'#38bdf8', error:'#f87171', warn:'#fbbf24', ok:'#4ade80' };
-  var panel = document.getElementById('debug-panel');
-  if (!panel) return;
-  // Note: toISOString() is intentionally used here for the debug timestamp only (UTC is fine for log timestamps)
-  var ts  = new Date().toISOString().slice(11, 23);
-  var row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:8px;';
-  row.innerHTML =
-    '<span style="color:#3d5a3d;flex-shrink:0">' + ts + '</span>' +
-    '<span style="color:'+(colors[level]||'#fff')+';flex-shrink:0;font-weight:600">['+level.toUpperCase()+']</span>' +
-    '<span style="color:#c8f7c8;word-break:break-all">' + esc(msg) + '</span>';
-  panel.appendChild(row);
-  panel.scrollTop = panel.scrollHeight;
-}
+                        // Generate layout matching top boutique architectural portfolios
+                        const propertyHTML = `
+                            <div class="property-block flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-12 lg:gap-16 items-start">
+                                
+                                <!-- Frame Image Layout -->
+                                <div class="w-full lg:w-[55%]">
+                                    <div class="overflow-hidden bg-stone-100 shadow-sm aspect-[4/3] md:aspect-[16/10]">
+                                        <img src="${mainImage}" alt="${property.name}" class="main-display w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]">
+                                    </div>
+                                    ${thumbHTML}
+                                </div>
 
-// ── helpers ──────────────────────────────────────────────────
+                                <!-- Narrative & Details Typography Grid -->
+                                <div class="w-full lg:w-[45%] flex flex-col justify-between self-stretch py-2">
+                                    <div>
+                                        <span class="text-xs tracking-[0.25em] text-[#5A635E] font-medium uppercase mb-3 block">
+                                            ${property.text_content.section_4 || 'Catskills, NY'}
+                                        </span>
+                                        <h3 class="font-serif text-3xl md:text-4xl text-[#1F2221] font-normal tracking-wide mb-6">
+                                            ${property.name}
+                                        </h3>
+                                        
+                                        <!-- Styled 5000-character description parsing -->
+                                        <p class="text-[#4E5451] font-light text-sm md:text-base leading-relaxed tracking-wide mb-8 whitespace-pre-line">
+                                            ${property.text_content.section_3 || 'Description incoming.'}
+                                        </p>
+                                        
+                                        <!-- Minimalist Highlights Chips -->
+                                        <div class="mb-10">
+                                            <span class="text-[10px] font-semibold text-stone-400 uppercase tracking-widest block mb-3">Cabin Inclusions</span>
+                                            <div class="flex flex-wrap gap-x-4 gap-y-2">
+                                                ${(property.text_content.section_5 || '').split(',').map(item => {
+                                                    if(!item.trim()) return '';
+                                                    return `<span class="text-xs text-[#2C302E] font-medium border-b border-stone-200 pb-1">${item.trim()}</span>`;
+                                                }).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+                                    <!-- Editorial Style CTA Link Button -->
+                                    <div>
+                                        <a href="#" class="inline-block bg-[#2C302E] text-white hover:bg-stone-800 text-center text-xs tracking-widest uppercase font-medium px-8 py-4 transition w-full sm:w-auto shadow-md">
+                                            Request Stay
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.innerHTML += propertyHTML;
+                    });
 
-function pad2(n) { return n < 10 ? '0'+n : ''+n; }
-
-/**
- * Format a local Date as 'YYYYMMDD' for iCal key matching.
- * Uses LOCAL time getters — never toISOString() (which gives UTC).
- */
-function dateKey(d) {
-  return '' + d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate());
-}
-
-/**
- * Format a local Date as a human label e.g. 'Mon 18 May 2026'.
- * Uses LOCAL time getters — never toISOString().
- */
-var DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function humanDate(d) {
-  return DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
-}
-
-/**
- * Build 14-day window using local Date constructor + setDate arithmetic.
- * Never uses toISOString() — safe across all timezones.
- */
-function buildWindow() {
-  var dates = [];
-  var base  = new Date();
-  base.setHours(0, 0, 0, 0);   // local midnight
-  for (var i = 0; i < 21; i++) {
-    var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-    dates.push(d);
-  }
-  return dates;
-}
-
-// ── status bar ────────────────────────────────────────────────
-
-function setStatus(type, msg) {
-  var bar  = document.getElementById('status-bar');
-  var text = document.getElementById('status-text');
-  var spin = document.getElementById('status-spinner');
-  text.textContent   = msg;
-  bar.className      = type;
-  spin.style.display = (type === '') ? 'block' : 'none';
-  dlog(type === 'error' ? 'error' : 'ok', 'Status: ' + msg);
-}
-
-// ── API transport (JSONP) ─────────────────────────────────────
-
-/**
- * JSONP GET request to the GAS API.
- * Uses a <script> tag — never subject to CORS.
- * Required because fetch() from a static host to script.google.com
- * triggers a CORS preflight GAS cannot satisfy.
- */
-function jsonp(url) {
-  return new Promise(function(resolve, reject) {
-    var callbackName = 'cb_' + Math.random().toString(36).slice(2);
-    var script  = document.createElement('script');
-    var timeout = setTimeout(function() {
-      cleanup();
-      reject(new Error('JSONP timeout after 15s'));
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[callbackName] = function(data) { cleanup(); resolve(data); };
-    script.onerror = function() { cleanup(); reject(new Error('JSONP script load error')); };
-    script.src = url + '&callback=' + callbackName;
-    dlog('verbose', '[JSONP] GET: ' + script.src.substring(0, 100) + '…');
-    document.head.appendChild(script);
-  });
-}
-
-function apiCall(action, params) {
-  if (!window.DEPLOYMENT_URL) {
-    return Promise.reject(new Error('window.DEPLOYMENT_URL not set'));
-  }
-  var url = window.DEPLOYMENT_URL + '?action=' + encodeURIComponent(action);
-  if (params) {
-    Object.keys(params).forEach(function(k) {
-      url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-    });
-  }
-  dlog('minimal', '[API] JSONP GET: action=' + action);
-  return jsonp(url);
-}
-
-// ── iCal parser ──────────────────────────────────────────────
-
-/**
- * Parse normalised iCal text (CRLF already cleaned by server)
- * into {checkouts, checkins} sets of YYYYMMDD keys.
- *
- * Handles all Airbnb DTSTART/DTEND variants:
- *   VALUE=DATE:20260518             → date-only, use directly
- *   TZID=America/Denver:20260518T110000  → floating local, use date portion
- *   :20260518T050000Z               → UTC datetime, convert to local date
- *
- * Uses /^DTSTART[;:]/ regex — NOT startsWith('DTSTART:')
- * so VALUE=DATE and TZID= variants are both caught.
- */
-function parseIcal(text, shortCode) {
-  var checkouts = new Set(), checkins = new Set();
-  if (!text) { dlog('warn', '['+shortCode+'] empty iCal'); return { checkouts: checkouts, checkins: checkins }; }
-
-  // Server already normalised CRLF→LF and unfolded lines
-  var lines    = text.split('\n');
-  var inEvent  = false;
-  var startKey = null, endKey = null;
-
-  lines.forEach(function(rawLine) {
-    var line = rawLine.trim();
-
-    if (line === 'BEGIN:VEVENT') {
-      inEvent = true; startKey = null; endKey = null;
-      return;
-    }
-    if (line === 'END:VEVENT') {
-      inEvent = false;
-      if (startKey) checkins.add(startKey);
-      if (endKey)   checkouts.add(endKey);
-      return;
-    }
-    if (!inEvent) return;
-
-    // Match DTSTART or DTEND with any parameters: VALUE=DATE, TZID=..., or bare
-    if (/^DTSTART[;:]/.test(line) || /^DTEND[;:]/.test(line)) {
-      var isStart  = line.charAt(2) === 'S';   // DTSTART vs DTEND
-      var rawValue = line.split(':').slice(1).join(':').trim();
-
-      // Normalise: strip time portion, strip dashes → YYYYMMDD
-      var datePart = rawValue.replace(/T.*$/, '').replace(/-/g, '');
-
-      var key;
-      // UTC datetime (ends with Z before we stripped T...)
-      if (/T\d{6}Z$/.test(rawValue)) {
-        // Convert UTC to local date to avoid midnight boundary flip
-        var localDate = new Date(Date.UTC(
-          parseInt(datePart.slice(0,4), 10),
-          parseInt(datePart.slice(4,6), 10) - 1,
-          parseInt(datePart.slice(6,8), 10),
-          parseInt(rawValue.slice(9,11), 10),
-          parseInt(rawValue.slice(11,13), 10),
-          parseInt(rawValue.slice(13,15), 10)
-        ));
-        key = dateKey(localDate);
-        dlog('verbose', '['+shortCode+'] UTC '+rawValue+' → local key '+key);
-      } else {
-        // DATE-only or floating local datetime — use date portion as-is
-        key = datePart;
-      }
-
-      if (isStart) startKey = key;
-      else         endKey   = key;
-    }
-  });
-
-  dlog('minimal', '['+shortCode+'] check-ins:'+checkins.size+' check-outs:'+checkouts.size);
-  return { checkouts: checkouts, checkins: checkins };
-}
-
-// ── grid renderer ────────────────────────────────────────────
-
-var _modalData = {};
-
-function renderGrid(properties, calendarMap, dates) {
-  dlog('minimal', 'renderGrid() properties:' + properties.length + ' dates:' + dates.length);
-  var grid = document.getElementById('grid-container');
-  grid.innerHTML = '';
-  _modalData = {};
-
-  dates.forEach(function(date, idx) {
-    var key     = dateKey(date);
-    var isToday = (idx === 0);
-
-    // Main view tiles: only properties with a checkout
-    var tiles = [];
-    properties.forEach(function(prop) {
-      var cal = calendarMap[prop.shortCode] || {};
-      var out = !!(cal.checkouts && cal.checkouts.has(key));
-      var inn = !!(cal.checkins  && cal.checkins.has(key));
-      if (out) tiles.push({ shortCode: prop.shortCode, icon: prop.icon || '🏠', isTurnover: out && inn });
-      dlog('verbose', '['+key+']['+prop.shortCode+'] out:'+out+' in:'+inn);
-    });
-
-    // Modal cards: properties with checkout OR checkin
-    var cards = [];
-    properties.forEach(function(prop) {
-      var cal = calendarMap[prop.shortCode] || {};
-      var out = !!(cal.checkouts && cal.checkouts.has(key));
-      var inn = !!(cal.checkins  && cal.checkins.has(key));
-      if (out || inn) cards.push({
-        shortCode: prop.shortCode, icon: prop.icon || '🏠',
-        fullName: prop.fullName, hasOut: out, hasIn: inn,
-        rank: (out && inn) ? 1 : out ? 2 : 3
-      });
-    });
-    cards.sort(function(a, b) { return a.rank - b.rank; });
-    _modalData[key] = { date: date, cards: cards };
-
-    // Build DOM
-    var row   = document.createElement('div');
-    var empty = (tiles.length === 0);
-    row.className   = 'day-row' + (isToday ? ' today-row' : '') + (empty ? ' empty-row' : '');
-    row.dataset.key = key;
-
-    var hdr =
-      '<div class="day-header">' +
-      '<div class="day-num">'  + date.getDate() + '</div>' +
-      '<div class="day-name">' + DAY_NAMES[date.getDay()] + '</div>' +
-      (isToday ? '<span class="today-tag">Today</span>' : '') +
-      '<div class="day-month">' + MONTH_NAMES[date.getMonth()] + '</div>' +
-      '</div>';
-
-    var body = empty
-      ? '<div class="empty-day-label">No checkouts</div>'
-      : '<div class="tile-tray">' + tiles.map(function(t) {
-          return '<div class="prop-tile' + (t.isTurnover ? ' alert' : '') + '">' +
-                 '<div class="tile-icon-wrap">' + t.icon + '</div>' +
-                 '<div class="tile-code">'      + esc(t.shortCode) + '</div>' +
-                 '</div>';
-        }).join('') + '</div>';
-
-    row.innerHTML = hdr + body;
-
-    if (!empty) {
-      row.addEventListener('click', function() { openModal(key); });
-      row.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        openModal(key);
-      }, { passive: false });
-    }
-    grid.appendChild(row);
-  });
-
-  dlog('minimal', 'Grid rendered.');
-}
-
-// ── modal ────────────────────────────────────────────────────
-
-function openModal(key) {
-  var data = _modalData[key];
-  if (!data) return;
-  dlog('verbose', 'Modal open: ' + key);
-  var d = data.date;
-  document.getElementById('modal-date-num').textContent   = d.getDate();
-  document.getElementById('modal-date-label').textContent = DAY_NAMES[d.getDay()];
-  document.getElementById('modal-date-month').textContent = MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
-
-  var body = document.getElementById('modal-body');
-  body.innerHTML = '';
-
-  if (!data.cards.length) {
-    body.innerHTML = '<div class="modal-empty">Nothing to do on this day.</div>';
-  } else {
-    data.cards.forEach(function(c) {
-      var tags = '';
-      if (c.hasOut && c.hasIn) tags = '<span class="tag tag-same">⚡ Same-Day Turnover</span><span class="tag tag-out">Check-Out</span><span class="tag tag-in">Check-In</span>';
-      else if (c.hasOut)       tags = '<span class="tag tag-out">Check-Out</span>';
-      else                     tags = '<span class="tag tag-in">Check-In</span>';
-      body.innerHTML +=
-        '<div class="modal-card rank-' + c.rank + '">' +
-        '<div class="modal-icon">' + c.icon + '</div>' +
-        '<div class="modal-info">' +
-        '<div class="modal-full-name">' + esc(c.fullName) + '</div>' +
-        '<div class="modal-tags">'      + tags            + '</div>' +
-        '</div></div>';
-    });
-  }
-  document.getElementById('modal-backdrop').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal-backdrop').classList.remove('open');
-}
-document.getElementById('modal-close').addEventListener('click', closeModal);
-document.getElementById('modal-backdrop').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
-
-// ── bootstrap ────────────────────────────────────────────────
-
-(function init() {
-  // Header date — local getters only, never toISOString()
-  var today = new Date();
-  document.getElementById('header-today').textContent = humanDate(today);
-
-  var dates = buildWindow();
-  setStatus('', 'Connecting to server…');
-
-  var t0 = Date.now();
-
-  apiCall('cleaning_data')
-    .then(function(data) {
-      dlog('minimal', 'API response in ' + (Date.now()-t0) + ' ms  server elapsed=' + data.elapsed + ' ms');
-      dlog('verbose', 'Full response', data);
-
-      // Mirror server debug mode now that we have the response
-      initDebug(data.debugMode || 'off');
-
-      // Sanity-check: log server's local today vs client's
-      dlog('minimal', 'Server today: ' + data.today + '  Client today: ' + dateKey(today));
-
-      if (!data.ok) {
-        setStatus('error', 'Server error: ' + (data.error || 'unknown'));
-        return;
-      }
-
-      dlog('minimal', 'Properties: ' + data.properties.length + '  iCal results: ' + (data.icalData||[]).length);
-
-      // Parse iCal text client-side (server already normalised line endings)
-      var calendarMap = {};
-      (data.icalData || []).forEach(function(r) {
-        if (r.error) dlog('error', '['+r.shortCode+'] server fetch error: '+r.error);
-        calendarMap[r.shortCode] = parseIcal(r.icalText, r.shortCode);
-      });
-
-      setStatus('ok',
-        'Dashboard ready  ·  ' + data.properties.length +
-        ' properties  ·  ' + data.elapsed + ' ms  ·  tz: ' + (data.timezone || '?')
-      );
-      renderGrid(data.properties, calendarMap, dates);
-    })
-    .catch(function(err) {
-      setStatus('error', 'Failed to load: ' + err.message);
-      dlog('error', 'apiCall() failed: ' + err.message);
-    });
-})();
-</script>
+                    loadingText.classList.add('hidden');
+                    container.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error(error);
+                    document.getElementById('loading').innerHTML = `
+                        <p class="font-serif text-red-700 tracking-wide">⚠️ Error mapping live data stream. Verify your listings.json file via GitHub Actions.</p>
+                    `;
+                });
+        });
+    </script>
 </body>
 </html>
