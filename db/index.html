@@ -536,12 +536,12 @@
 
 // JSONP bypasses CORS for GET requests to Google Apps Script
 function jsonp(url) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const callbackName = 'cb_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
     const timeout = setTimeout(() => {
       cleanup();
-      reject(new Error('JSONP request timed out'));
+      resolve({ error: 'Request timed out' });
     }, 15000);
 
     function cleanup() {
@@ -555,16 +555,17 @@ function jsonp(url) {
       resolve(data);
     };
 
-    script.src = url + '&callback=' + callbackName;
     script.onerror = function() {
       cleanup();
-      reject(new Error('JSONP script load error'));
+      resolve({ error: 'JSONP script load error — check deployment URL' });
     };
+
+    script.src = url + '&callback=' + callbackName;
     document.head.appendChild(script);
   });
 }
 
-async function apiCall(action, params = {}, method = 'GET') {
+async function apiCall(action, params = {}) {
   try {
     if (!window.DEPLOYMENT_URL) {
       console.error('[API Error] Deployment URL not set');
@@ -572,29 +573,15 @@ async function apiCall(action, params = {}, method = 'GET') {
     }
 
     let url = window.DEPLOYMENT_URL + '?action=' + action;
-
-    if (method === 'GET') {
-      for (const [key, value] of Object.entries(params)) {
-        url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
-      }
-      console.log('[API Call] JSONP GET:', url);
-      return await jsonp(url);
-
-    } else {
-      // POST with text/plain avoids CORS preflight
-      console.log('[API Call] POST:', window.DEPLOYMENT_URL);
-      const response = await fetch(window.DEPLOYMENT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action, ...params })
-      });
-      const text = await response.text();
-      if (text.trim().startsWith('<')) {
-        console.error('[API Error] Received HTML instead of JSON');
-        return { error: 'Server error' };
-      }
-      return JSON.parse(text);
+    for (const [key, value] of Object.entries(params)) {
+      url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
     }
+    if (url.length > 2000) {
+      console.warn('[API Call] URL length is ' + url.length + ' chars — may be truncated by browser/server');
+    }
+    console.log('[API Call] JSONP GET:', url);
+    return await jsonp(url);
+
   } catch (error) {
     console.error('[API Error]', error);
     return { error: error.toString() };
@@ -616,7 +603,7 @@ let availState = {
   const data = await apiCall('init');
   
   if (data.error) {
-    showToast('❌', 'Error loading properties: ' + data.error, true);
+    console.error('[init] Failed to load properties:', data.error);
     return;
   }
 
@@ -719,7 +706,8 @@ async function runAvailabilityCheck(cabin, checkIn, checkOut) {
   availState.checking = false;
 
   if (result.error) {
-    showAvailError('Could not check availability: ' + result.error);
+    console.error('[checkAvailability] Error:', result.error);
+    showAvailError('Unable to check availability. Please try again.');
     return;
   }
 
@@ -962,14 +950,17 @@ document.getElementById('guestForm').addEventListener('submit', async function(e
 
   setLoading(true);
 
-  const result = await apiCall('submitReservation', data, 'POST');
+  const result = await apiCall('submitReservation', data);
 
   setLoading(false);
+
+  console.log('[submitReservation] Full result:', JSON.stringify(result));
 
   if (result.success) {
     showSuccess(data);
   } else {
-    showToast('❌', result.message || 'Something went wrong.', true);
+    console.error('[submitReservation] Error:', result.message || result.error);
+    showToast('❌', 'Something went wrong. Please try again.', true);
   }
 });
 
@@ -1045,7 +1036,8 @@ async function openCalendar() {
   const data = await apiCall('getCalendarData');
 
   if (data.error) {
-    document.getElementById('calLoading').innerHTML = '⚠️ ' + data.error;
+    console.error('[getCalendarData] Error:', data.error);
+    document.getElementById('calLoading').innerHTML = '⚠️ Unable to load calendar. Please try again later.';
     return;
   }
 
