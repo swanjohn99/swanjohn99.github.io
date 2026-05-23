@@ -787,13 +787,19 @@ function renderAvailability(result) {
       nameRow2.appendChild(badge);
       row.appendChild(nameRow2);
 
-      if (!c.error && c.blockedDates && c.blockedDates.length > 0) {
+      if (!c.error && (c.freeDates && c.freeDates.length > 0 || c.blockedDates && c.blockedDates.length > 0)) {
         const chips2 = document.createElement('div');
         chips2.className = 'date-chips';
-        c.blockedDates.forEach(d => {
+
+        const allDates2 = [];
+        (c.freeDates || []).forEach(d => allDates2.push({ d, type: 'free' }));
+        (c.blockedDates || []).forEach(d => allDates2.push({ d, type: 'blocked' }));
+        allDates2.sort((a, b) => a.d < b.d ? -1 : 1);
+
+        allDates2.forEach(d => {
           const chip = document.createElement('span');
-          chip.className = 'chip blocked';
-          chip.textContent = formatDateShort(d) + ' ✗';
+          chip.className = 'chip ' + d.type;
+          chip.textContent = formatDateShort(d.d) + (d.type === 'blocked' ? ' ✗' : ' ✓');
           chips2.appendChild(chip);
         });
         row.appendChild(chips2);
