@@ -3,9 +3,9 @@
 <head>
   <script>
     // ── CONFIGURATION ──────────────────────────────────────
-    // Paste your Google Apps Script deployment URL here.
-    // Get it from: Deploy → Manage Deployments → copy the URL
-    window.DEPLOYMENT_URL = "https://script.google.com/macros/s/AKfycbyMG7_EoKCZQ9y6dYyAFcj2XWdOFDqEPc1RJ2Meax-Xe-nornL5LOHK_XRhwsER7wqD/exec";
+    // Cloudflare Worker proxies to Google Apps Script.
+    // Avoids Chrome Android /u/1 / etc routing issues with multiple Google users.
+    window.DEPLOYMENT_URL = "https://divine-tree-448f.bronxfragrance.workers.dev";
     // ───────────────────────────────────────────────────────
   </script>
   <meta charset="UTF-8" />
