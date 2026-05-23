@@ -11,9 +11,11 @@
      Never inject this from the server — hardcode it here.
      ═══════════════════════════════════════════════════════ -->
 <script>
-  // ── ONLY LINE TO CHANGE after a new GAS deployment ──
-  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyBMSJT3WNWd-zu76nlcfSfIRaJ7-zI5-JtPnx2kPiLLTgo-mlzKTlIAk27JPjaGiG2/exec';
-  window.WORKER_URL = 'https://divine-tree-448f.bronxfragrance.workers.dev';
+  // ── ONLY LINE TO CHANGE after deploying the Cloudflare Worker ──
+  // The browser talks only to this workers.dev URL — never to
+  // script.google.com directly. This bypasses Android Chrome's
+  // /u/1/ account injection which cannot be fixed client-side.
+  window.WORKER_URL = 'https://YOUR-WORKER-NAME.YOUR-CF-NAME.workers.dev';
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -268,7 +270,7 @@ function initDebug(mode) {
     'font-family:monospace;font-size:11px;max-height:200px;overflow-y:auto;' +
     'padding:6px 12px 10px;line-height:1.7;';
   document.getElementById('app').style.paddingBottom = '220px';
-  dlog('ok', 'Debug mode: ' + _debugMode + '  |  DEPLOYMENT_URL set: ' + !!window.DEPLOYMENT_URL);
+  dlog('ok', 'Debug mode: ' + _debugMode + '  |  WORKER_URL set: ' + !!window.WORKER_URL);
 }
 
 function dlog(level, msg, data) {
@@ -344,54 +346,50 @@ function setStatus(type, msg) {
   dlog(type === 'error' ? 'error' : 'ok', 'Status: ' + msg);
 }
 
-// ── API transport (JSONP) ─────────────────────────────────────
-
-/**
- * JSONP GET request to the GAS API.
- * Uses a <script> tag — never subject to CORS.
- * Required because fetch() from a static host to script.google.com
- * triggers a CORS preflight GAS cannot satisfy.
- */
-function jsonp(url) {
-  // Strip /u/N/ account-routing Chrome injects with multiple Google
-  // accounts signed in. Public /exec URLs never contain this segment
-  // — it causes a 404 on GAS servers.
-  url = url.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
-
-  return new Promise(function(resolve, reject) {
-    var callbackName = 'cb_' + Math.random().toString(36).slice(2);
-    var script  = document.createElement('script');
-    var timeout = setTimeout(function() {
-      cleanup();
-      reject(new Error('JSONP timeout after 15s'));
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[callbackName] = function(data) { cleanup(); resolve(data); };
-    script.onerror = function() { cleanup(); reject(new Error('JSONP script load error')); };
-    script.src = url + '&callback=' + callbackName;
-    dlog('verbose', '[JSONP] GET: ' + script.src.substring(0, 100) + '…');
-    document.head.appendChild(script);
-  });
-}
+// ── API transport ─────────────────────────────────────────────
+//
+// WHY A CLOUDFLARE WORKER?
+// Android Chrome with multiple Google accounts intercepts ALL
+// requests to script.google.com at the network layer — including
+// <script> tag src attributes used by JSONP — and injects /u/1/
+// into the path, causing a 404. This happens after our JS runs
+// so it cannot be fixed client-side.
+//
+// The Worker receives fetch() calls from the browser on a neutral
+// workers.dev domain (no Google account interference), then
+// forwards the request to GAS server-side where no browser
+// account logic applies. The Worker adds CORS headers so plain
+// fetch() works from any static host.
+//
+// The browser never touches script.google.com directly.
 
 function apiCall(action, params) {
-  if (!window.DEPLOYMENT_URL) {
-    return Promise.reject(new Error('window.DEPLOYMENT_URL not set'));
+  if (!window.WORKER_URL) {
+    return Promise.reject(new Error('window.WORKER_URL not set'));
   }
-  var url = window.DEPLOYMENT_URL + '?action=' + encodeURIComponent(action);
+
+  var url = window.WORKER_URL + '?action=' + encodeURIComponent(action);
   if (params) {
     Object.keys(params).forEach(function(k) {
       url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     });
   }
-  dlog('minimal', '[API] JSONP GET: action=' + action);
-  return jsonp(url);
+
+  dlog('minimal', '[API] fetch GET: action=' + action);
+
+  return fetch(url)
+    .then(function(res) {
+      dlog('verbose', '[API] HTTP ' + res.status);
+      if (!res.ok) throw new Error('Worker returned HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function(text) {
+      if (text.trimStart().charAt(0) === '<') {
+        throw new Error('Server returned HTML — check GAS deployment settings');
+      }
+      try { return JSON.parse(text); }
+      catch(e) { throw new Error('Invalid JSON: ' + text.substring(0, 80)); }
+    });
 }
 
 // ── iCal parser ──────────────────────────────────────────────
