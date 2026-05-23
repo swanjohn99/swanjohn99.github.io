@@ -536,32 +536,16 @@
 
 // JSONP bypasses CORS for GET requests to Google Apps Script
 function jsonp(url) {
-  return new Promise((resolve) => {
-    const callbackName = 'cb_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve({ error: 'Request timed out' });
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[callbackName] = function(data) {
-      cleanup();
+  // Worker returns plain JSON with CORS headers, use fetch instead of JSONP
+  return new Promise(async (resolve) => {
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
       resolve(data);
-    };
-
-    script.onerror = function() {
-      cleanup();
-      resolve({ error: 'JSONP script load error — check deployment URL' });
-    };
-
-    script.src = url + '&callback=' + callbackName;
-    document.head.appendChild(script);
+    } catch (err) {
+      console.error('[fetch] Error:', err.message);
+      resolve({ error: err.message });
+    }
   });
 }
 
@@ -579,7 +563,7 @@ async function apiCall(action, params = {}) {
     if (url.length > 2000) {
       console.warn('[API Call] URL length is ' + url.length + ' chars — may be truncated by browser/server');
     }
-    console.log('[API Call] JSONP GET:', url);
+    console.log('[API Call] GET (via Cloudflare Worker):', url);
     return await jsonp(url);
 
   } catch (error) {
