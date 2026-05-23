@@ -12,7 +12,7 @@
      ═══════════════════════════════════════════════════════ -->
 <script>
   // ── ONLY LINE TO CHANGE after a new GAS deployment ──
-  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyMG7_EoKCZQ9y6dYyAFcj2XWdOFDqEPc1RJ2Meax-Xe-nornL5LOHK_XRhwsER7wqD/exec';
+  window.DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyBMSJT3WNWd-zu76nlcfSfIRaJ7-zI5-JtPnx2kPiLLTgo-mlzKTlIAk27JPjaGiG2/exec';
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -352,6 +352,11 @@ function setStatus(type, msg) {
  * triggers a CORS preflight GAS cannot satisfy.
  */
 function jsonp(url) {
+  // Strip /u/N/ account-routing Chrome injects with multiple Google
+  // accounts signed in. Public /exec URLs never contain this segment
+  // — it causes a 404 on GAS servers.
+  url = url.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
+
   return new Promise(function(resolve, reject) {
     var callbackName = 'cb_' + Math.random().toString(36).slice(2);
     var script  = document.createElement('script');
