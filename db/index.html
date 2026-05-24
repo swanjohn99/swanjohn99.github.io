@@ -646,58 +646,31 @@ let availState = {
 })();
 
 // ── Date change listener ───────────────────────────────────
-let availDebounce = null;
+// Only clear old results when inputs change — no auto API call
+['property', 'checkIn', 'checkOut'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function() {
+    clearErr('property');
+    clearErr('checkIn');
+    clearErr('checkOut');
+    hideAvailPanel();
+    calendarCache = null;
+    availState.checked = false;
+    availState.available = false;
+    updateSubmitButton();
 
-document.getElementById('property').addEventListener('change', scheduleAvailCheck);
-
-document.getElementById('checkIn').addEventListener('change', function() {
-  const checkIn = this.value;
-  const checkOutEl = document.getElementById('checkOut');
-
-  // Set check-out min to day after check-in
-  if (checkIn) {
-    checkOutEl.min = checkIn;
-    // If current check-out is on or before new check-in, clear it
-    if (checkOutEl.value && checkOutEl.value <= checkIn) {
-      checkOutEl.value = '';
+    // If check-in changed, enforce check-out min
+    if (id === 'checkIn') {
+      const checkIn = this.value;
+      const checkOutEl = document.getElementById('checkOut');
+      if (checkIn) {
+        checkOutEl.min = checkIn;
+        if (checkOutEl.value && checkOutEl.value <= checkIn) {
+          checkOutEl.value = '';
+        }
+      }
     }
-  }
-
-  scheduleAvailCheck();
+  });
 });
-
-document.getElementById('checkOut').addEventListener('change', scheduleAvailCheck);
-
-function scheduleAvailCheck() {
-  // Clear old results immediately
-  clearErr('property');
-  clearErr('checkIn');
-  clearErr('checkOut');
-  hideAvailPanel();
-  calendarCache = null;
-  availState.checked = false;
-  availState.available = false;
-  availState.checking = false; // cancel any in-flight check
-  updateSubmitButton();
-
-  // Debounce: wait 3 seconds after last change before calling API
-  clearTimeout(availDebounce);
-  availDebounce = setTimeout(doAvailCheck, 3000);
-}
-
-async function doAvailCheck() {
-  const cabin = document.getElementById('property').value;
-  const checkIn = document.getElementById('checkIn').value;
-  const checkOut = document.getElementById('checkOut').value;
-
-  if (!cabin || !checkIn || !checkOut) return;
-
-  if (checkOut <= checkIn) {
-    showErr('checkOut', 'Check-out must be after check-in.');
-    return;
-  }
-
-  await runAvailabilityCheck(cabin, checkIn, checkOut);
 }
 
 async function runAvailabilityCheck(cabin, checkIn, checkOut) {
@@ -888,27 +861,54 @@ function updateSubmitButton() {
 
   if (availState.checking) {
     btn.disabled = true;
+    btn.onclick = null;
     txt.textContent = 'Checking…';
     hint.textContent = '';
     return;
   }
 
   if (!availState.checked) {
-    btn.disabled = true;
-    txt.textContent = 'Check Availability First';
-    hint.textContent = 'Select a cabin and dates to check availability';
+    // Not checked yet — button says "Check Availability"
+    btn.disabled = false;
+    btn.onclick = handleCheckAvailClick;
+    txt.textContent = 'Check Availability';
+    hint.textContent = 'Select a cabin and dates, then check availability';
     return;
   }
 
   if (availState.available) {
+    // Available — button says "Complete Registration"
     btn.disabled = false;
+    btn.onclick = null; // let form submit handler take over
     txt.textContent = 'Complete Registration';
     hint.textContent = '✓ Dates are available — fill in your details and submit';
   } else {
-    btn.disabled = true;
-    txt.textContent = 'Dates Not Available';
-    hint.textContent = 'Please select a different cabin or date range';
+    // Not available — button says "Check Availability" to try again
+    btn.disabled = false;
+    btn.onclick = handleCheckAvailClick;
+    txt.textContent = 'Check Availability';
+    hint.textContent = 'Dates not available — change dates and check again';
   }
+}
+
+async function handleCheckAvailClick(e) {
+  e.preventDefault();
+
+  const cabin    = document.getElementById('property').value;
+  const checkIn  = document.getElementById('checkIn').value;
+  const checkOut = document.getElementById('checkOut').value;
+
+  let ok = true;
+  clearErr('property'); clearErr('checkIn'); clearErr('checkOut');
+
+  if (!cabin)    { showErr('property', 'Please select a cabin.'); ok = false; }
+  if (!checkIn)  { showErr('checkIn', 'Check-in date is required.'); ok = false; }
+  if (!checkOut) { showErr('checkOut', 'Check-out date is required.'); ok = false; }
+  else if (checkIn && checkOut <= checkIn) { showErr('checkOut', 'Check-out must be after check-in.'); ok = false; }
+
+  if (!ok) return;
+
+  await runAvailabilityCheck(cabin, checkIn, checkOut);
 }
 
 function showErr(id, msg) {
@@ -951,6 +951,12 @@ document.getElementById('email').addEventListener('blur', function() {
 
 document.getElementById('guestForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+
+  // If availability not checked yet, run the check instead of submitting
+  if (!availState.checked || !availState.available) {
+    handleCheckAvailClick(e);
+    return;
+  }
 
   const data = {
     guestName: document.getElementById('guestName').value.trim(),
