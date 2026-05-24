@@ -560,6 +560,8 @@ async function apiCall(action, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
     }
+    // Cache-buster prevents stale responses
+    url += '&_t=' + Date.now();
     if (url.length > 2000) {
       console.warn('[API Call] URL length is ' + url.length + ' chars — may be truncated by browser/server');
     }
@@ -644,31 +646,54 @@ let availState = {
 })();
 
 // ── Date change listener ───────────────────────────────────
-['property', 'checkIn', 'checkOut'].forEach(id => {
-  document.getElementById(id).addEventListener('change', onDateOrCabinChange);
+let availDebounce = null;
+
+document.getElementById('property').addEventListener('change', scheduleAvailCheck);
+
+document.getElementById('checkIn').addEventListener('change', function() {
+  const checkIn = this.value;
+  const checkOutEl = document.getElementById('checkOut');
+
+  // Set check-out min to day after check-in
+  if (checkIn) {
+    checkOutEl.min = checkIn;
+    // If current check-out is on or before new check-in, clear it
+    if (checkOutEl.value && checkOutEl.value <= checkIn) {
+      checkOutEl.value = '';
+    }
+  }
+
+  scheduleAvailCheck();
 });
 
-async function onDateOrCabinChange() {
+document.getElementById('checkOut').addEventListener('change', scheduleAvailCheck);
+
+function scheduleAvailCheck() {
+  // Clear old results immediately
   clearErr('property');
   clearErr('checkIn');
   clearErr('checkOut');
+  hideAvailPanel();
+  calendarCache = null;
+  availState.checked = false;
+  availState.available = false;
+  availState.checking = false; // cancel any in-flight check
+  updateSubmitButton();
 
+  // Debounce: wait 3 seconds after last change before calling API
+  clearTimeout(availDebounce);
+  availDebounce = setTimeout(doAvailCheck, 3000);
+}
+
+async function doAvailCheck() {
   const cabin = document.getElementById('property').value;
   const checkIn = document.getElementById('checkIn').value;
   const checkOut = document.getElementById('checkOut').value;
 
-  availState.checked = false;
-  availState.available = false;
-  updateSubmitButton();
+  if (!cabin || !checkIn || !checkOut) return;
 
-  if (checkIn && checkOut && checkOut <= checkIn) {
+  if (checkOut <= checkIn) {
     showErr('checkOut', 'Check-out must be after check-in.');
-    hideAvailPanel();
-    return;
-  }
-
-  if (!cabin || !checkIn || !checkOut) {
-    hideAvailPanel();
     return;
   }
 
