@@ -114,6 +114,7 @@
     select option { background: #1e3a2f; color: var(--white); }
 
     .err-msg { font-size: .75rem; color: #e07070; min-height: 16px; display: block; }
+    .rule-hint { font-size: .72rem; color: var(--smoke); display: block; margin-top: 2px; opacity: .8; }
 
     .divider { height: 1px; background: rgba(255,255,255,.08); margin: 4px 0; grid-column: 1 / -1; }
 
@@ -459,12 +460,14 @@
         <div class="field">
           <label for="checkIn">Check-in Date</label>
           <input type="date" id="checkIn" name="checkIn" />
+          <span class="rule-hint" id="checkInRuleHint"></span>
           <span class="err-msg" id="err-checkIn"></span>
         </div>
 
         <div class="field">
           <label for="checkOut">Check-out Date</label>
           <input type="date" id="checkOut" name="checkOut" />
+          <span class="rule-hint" id="checkOutRuleHint"></span>
           <span class="err-msg" id="err-checkOut"></span>
         </div>
 
@@ -577,6 +580,7 @@ async function apiCall(action, params = {}) {
 // ── State ──────────────────────────────────────────────────
 let propertyData = [];
 let availabilityData = {}; // { cabin → { checkIn, checkOut, analysis } }
+let activeRules = [];
 
 let availState = {
   checked: false,
@@ -594,6 +598,7 @@ let availState = {
   }
 
   propertyData = data.properties || [];
+  activeRules = data.rules || [];
 
   const select = document.getElementById('property');
   const grid = document.getElementById('cabinTiles');
@@ -602,6 +607,9 @@ let availState = {
   // Set min dates
   document.getElementById('checkIn').min = minDate;
   document.getElementById('checkOut').min = minDate;
+
+  // Apply rule hints
+  applyRuleHints();
 
   propertyData.forEach((p) => {
     // Dropdown
@@ -666,6 +674,25 @@ let availState = {
         checkOutEl.min = checkIn;
         if (checkOutEl.value && checkOutEl.value <= checkIn) {
           checkOutEl.value = '';
+        }
+        // Validate check-in day rules
+        const ruleErr = validateRules(checkIn, checkOutEl.value || '2099-01-01');
+        if (ruleErr && ruleErr.toLowerCase().includes('check-in')) {
+          showErr('checkIn', ruleErr);
+          this.value = '';
+        }
+      }
+    }
+
+    // If check-out changed, validate rules
+    if (id === 'checkOut') {
+      const checkIn = document.getElementById('checkIn').value;
+      const checkOut = this.value;
+      if (checkIn && checkOut) {
+        const ruleErr = validateRules(checkIn, checkOut);
+        if (ruleErr) {
+          showErr('checkOut', ruleErr);
+          this.value = '';
         }
       }
     }
@@ -904,6 +931,16 @@ async function handleCheckAvailClick(e) {
   if (!checkIn)  { showErr('checkIn', 'Check-in date is required.'); ok = false; }
   if (!checkOut) { showErr('checkOut', 'Check-out date is required.'); ok = false; }
   else if (checkIn && checkOut <= checkIn) { showErr('checkOut', 'Check-out must be after check-in.'); ok = false; }
+
+  // Validate rules
+  if (ok && checkIn && checkOut) {
+    const ruleErr = validateRules(checkIn, checkOut);
+    if (ruleErr) {
+      if (ruleErr.toLowerCase().includes('check-in')) showErr('checkIn', ruleErr);
+      else showErr('checkOut', ruleErr);
+      ok = false;
+    }
+  }
 
   if (!ok) return;
 
@@ -1206,6 +1243,81 @@ function dateAddDay(str) {
   return dt.getFullYear() + '-' +
     String(dt.getMonth() + 1).padStart(2, '0') + '-' +
     String(dt.getDate()).padStart(2, '0');
+}
+
+// ── Rules Engine ────────────────────────────────────────────
+// Reads activeRules[] (from server) and enforces them on date selection.
+// To add a new rule: add a case to applyRuleHints() and validateRules().
+
+const RULE_MESSAGES = {
+  no_saturday_checkin:  'ℹ Saturday check-in not available',
+  no_sunday_checkout:   'ℹ Sunday check-out not available',
+  min_2_nights:         'ℹ Minimum stay: 2 nights',
+  min_3_nights:         'ℹ Minimum stay: 3 nights',
+  max_14_nights:        'ℹ Maximum stay: 14 nights'
+};
+
+function applyRuleHints() {
+  const checkInHint  = document.getElementById('checkInRuleHint');
+  const checkOutHint = document.getElementById('checkOutRuleHint');
+  checkInHint.textContent = '';
+  checkOutHint.textContent = '';
+
+  const checkInHints = [];
+  const checkOutHints = [];
+
+  activeRules.forEach(rule => {
+    if (rule.startsWith('no_') && rule.endsWith('_checkin')) {
+      checkInHints.push(RULE_MESSAGES[rule] || 'ℹ ' + rule);
+    } else if (rule.startsWith('no_') && rule.endsWith('_checkout')) {
+      checkOutHints.push(RULE_MESSAGES[rule] || 'ℹ ' + rule);
+    } else if (rule.startsWith('min_') || rule.startsWith('max_')) {
+      checkOutHints.push(RULE_MESSAGES[rule] || 'ℹ ' + rule);
+    }
+  });
+
+  if (checkInHints.length)  checkInHint.textContent = checkInHints.join(' · ');
+  if (checkOutHints.length) checkOutHint.textContent = checkOutHints.join(' · ');
+}
+
+// Returns error message string if a rule is violated, or null if OK
+function validateRules(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return null;
+
+  const [iy, im, id] = checkIn.split('-').map(Number);
+  const [oy, om, od] = checkOut.split('-').map(Number);
+  const inDate  = new Date(iy, im - 1, id);
+  const outDate = new Date(oy, om - 1, od);
+  const nights  = Math.round((outDate - inDate) / 86400000);
+
+  for (const rule of activeRules) {
+    switch (rule) {
+      case 'no_saturday_checkin':
+        if (inDate.getDay() === 6) return 'Saturday check-in is not available.';
+        break;
+      case 'no_sunday_checkin':
+        if (inDate.getDay() === 0) return 'Sunday check-in is not available.';
+        break;
+      case 'no_saturday_checkout':
+        if (outDate.getDay() === 6) return 'Saturday check-out is not available.';
+        break;
+      case 'no_sunday_checkout':
+        if (outDate.getDay() === 0) return 'Sunday check-out is not available.';
+        break;
+      case 'min_2_nights':
+        if (nights < 2) return 'Minimum stay is 2 nights.';
+        break;
+      case 'min_3_nights':
+        if (nights < 3) return 'Minimum stay is 3 nights.';
+        break;
+      case 'max_14_nights':
+        if (nights > 14) return 'Maximum stay is 14 nights.';
+        break;
+      default:
+        console.log('[rules] Unknown rule: ' + rule);
+    }
+  }
+  return null;
 }
 </script>
 
