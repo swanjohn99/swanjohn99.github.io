@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Board</title>
+
+<!-- SortableJS: handles drag-and-drop on BOTH mouse and touch (works on Android).
+     Loaded from Cloudflare's CDN. Swap for a self-hosted copy if you prefer no CDN. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+
+<style>
+  :root {
+    --bg:        #0f1115;
+    --surface:   #181b22;
+    --surface-2: #20242e;
+    --line:      #2c313d;
+    --ink:       #e8eaf0;
+    --ink-dim:   #9aa3b2;
+    --accent:    #7c9cff;
+    --danger:    #e06c75;
+    --shadow:    0 6px 24px rgba(0,0,0,.45);
+    --radius:    14px;
+
+    --c-red:    #e06c75;
+    --c-yellow: #e5c07b;
+    --c-green:  #98c379;
+    --c-blue:   #61afef;
+    --c-purple: #c678dd;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, #1b2030 0%, var(--bg) 55%) fixed;
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+    overscroll-behavior: none;
+  }
+
+  /* ── Top bar ─────────────────────────────────────────────────────────────── */
+  header {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: rgba(15,17,21,.7); backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 20;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 1.1rem; font-weight: 650; margin: 0 .4rem 0 0; letter-spacing: .2px;
+    background: linear-gradient(90deg, #fff, #b9c4ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .spacer { flex: 1; }
+  input, button, select { font: inherit; }
+  .field {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 10px; padding: .5rem .7rem; outline: none;
+  }
+  .field:focus { border-color: var(--accent); }
+  #token { width: 9.5rem; }
+  .btn {
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+    border-radius: 10px; padding: .5rem .85rem; cursor: pointer; transition: .15s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #0c1020; border-color: transparent; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  #status { font-size: .82rem; color: var(--ink-dim); min-width: 6rem; }
+  #status.dirty { color: var(--c-yellow); }
+  #status.error { color: var(--danger); }
+  #status.ok    { color: var(--c-green); }
+
+  /* ── Board ───────────────────────────────────────────────────────────────── */
+  #board {
+    flex: 1; display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1.1rem; overflow-x: auto; overflow-y: hidden;
+  }
+  .list {
+    flex: 0 0 290px; max-height: 100%;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); display: flex; flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .list-head {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .7rem .8rem .55rem;
+  }
+  .list-title {
+    font-weight: 600; font-size: .98rem; flex: 1;
+    background: transparent; border: 1px solid transparent; border-radius: 8px;
+    color: var(--ink); padding: .25rem .35rem; min-width: 0;
+  }
+  .list-title:focus { border-color: var(--line); background: var(--surface-2); outline: none; }
+  .count {
+    font-size: .72rem; color: var(--ink-dim); background: var(--surface-2);
+    border-radius: 999px; padding: .12rem .5rem; min-width: 1.6rem; text-align: center;
+  }
+  .icon-btn {
+    background: transparent; border: none; color: var(--ink-dim); cursor: pointer;
+    font-size: 1.1rem; line-height: 1; padding: .2rem .35rem; border-radius: 8px;
+  }
+  .icon-btn:hover { color: var(--danger); background: var(--surface-2); }
+  .cards {
+    list-style: none; margin: 0; padding: .25rem .6rem .6rem;
+    overflow-y: auto; flex: 1; min-height: 8px;
+  }
+  .card {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 11px; padding: .6rem .7rem; margin-bottom: .55rem;
+    cursor: grab; position: relative; transition: border-color .15s, transform .05s;
+  }
+  .card:hover { border-color: #3a4153; }
+  .card:active { cursor: grabbing; }
+  .card .strip {
+    height: 5px; width: 38px; border-radius: 999px; margin-bottom: .4rem;
+  }
+  .card .ttl { font-size: .92rem; line-height: 1.3; word-break: break-word; }
+  .card .meta { display: flex; gap: .4rem; margin-top: .45rem; flex-wrap: wrap; }
+  .badge {
+    font-size: .72rem; color: var(--ink-dim); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 7px; padding: .1rem .45rem;
+  }
+  .badge.due-over { color: var(--danger); border-color: var(--danger); }
+  .badge.has-desc { padding: .1rem .4rem; }
+  .add-card {
+    margin: 0 .6rem .6rem; padding: .5rem; width: calc(100% - 1.2rem);
+    text-align: left; color: var(--ink-dim);
+    background: transparent; border: 1px dashed var(--line); border-radius: 10px; cursor: pointer;
+  }
+  .add-card:hover { color: var(--ink); border-color: var(--accent); }
+  #add-list {
+    flex: 0 0 290px; border: 1px dashed var(--line); background: transparent;
+    color: var(--ink-dim); border-radius: var(--radius); padding: .9rem; cursor: pointer;
+  }
+  #add-list:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* SortableJS helpers */
+  .sortable-ghost { opacity: .4; }
+  .sortable-drag  { box-shadow: var(--shadow); }
+
+  /* ── Modal ───────────────────────────────────────────────────────────────── */
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem;
+  }
+  .modal-back.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    width: 100%; max-width: 460px; padding: 1.1rem; box-shadow: var(--shadow);
+  }
+  .modal label { display: block; font-size: .78rem; color: var(--ink-dim); margin: .8rem 0 .3rem; }
+  .modal input[type=text], .modal textarea, .modal input[type=date] {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink); border-radius: 10px; padding: .6rem .7rem; outline: none;
+  }
+  .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal textarea { min-height: 90px; resize: vertical; }
+  .swatches { display: flex; gap: .5rem; margin-top: .3rem; }
+  .swatch {
+    width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .swatch.sel { border-color: #fff; }
+  .swatch.none { background: var(--surface-2); border: 1px solid var(--line); position: relative; }
+  .swatch.none::after { content: "✕"; color: var(--ink-dim); font-size: .8rem; position: absolute; inset: 0; display: grid; place-items: center; }
+  .modal-actions { display: flex; gap: .6rem; margin-top: 1.2rem; }
+  .modal-actions .spacer { flex: 1; }
+  .btn.danger { color: var(--danger); border-color: transparent; background: transparent; }
+  .btn.danger:hover { border-color: var(--danger); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Board</h1>
+    <input id="token" class="field" type="password" placeholder="Write password" autocomplete="off">
+    <button id="saveBtn" class="btn primary">Save</button>
+    <span id="status">Loading…</span>
+    <span class="spacer"></span>
+    <button id="reloadBtn" class="btn" title="Reload from server">↻ Reload</button>
+  </header>
+
+  <div id="board"></div>
+
+  <!-- Card editor -->
+  <div class="modal-back" id="modalBack">
+    <div class="modal">
+      <label>Title</label>
+      <input id="m-title" type="text" placeholder="Card title">
+      <label>Description</label>
+      <textarea id="m-desc" placeholder="Details, links to Drive files, notes…"></textarea>
+      <label>Due date</label>
+      <input id="m-due" type="date">
+      <label>Color</label>
+      <div class="swatches" id="m-swatches"></div>
+      <div class="modal-actions">
+        <button class="btn danger" id="m-delete">Delete</button>
+        <span class="spacer"></span>
+        <button class="btn" id="m-cancel">Cancel</button>
+        <button class="btn primary" id="m-save">Done</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────────
+  const WORKER_URL = 'https://YOUR-WORKER.workers.dev'; // ← your Cloudflare Worker URL
+  const APP = 'kanban';
+
+  const COLORS = { red:'var(--c-red)', yellow:'var(--c-yellow)', green:'var(--c-green)', blue:'var(--c-blue)', purple:'var(--c-purple)' };
+
+  // ── State ─────────────────────────────────────────────────────────────────────
+  let state = { lists: [] };
+  let dirty = false;
+  let editing = null; // { listId, cardId }
+  const $ = (s, r=document) => r.querySelector(s);
+
+  // Persist password locally (this browser only — never in source).
+  $('#token').value = localStorage.getItem('writeToken') || '';
+  $('#token').addEventListener('change', e => localStorage.setItem('writeToken', e.target.value));
+
+  function setStatus(t, kind='') { const el=$('#status'); el.textContent=t; el.className=kind; }
+  function markDirty() { dirty = true; setStatus('Unsaved changes', 'dirty'); }
+  function uid() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue=''; } });
+
+  // ── API ───────────────────────────────────────────────────────────────────────
+  async function call(action, extra) {
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action }, extra || {})),
+    });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Request failed');
+    return json.data;
+  }
+
+  async function load() {
+    setStatus('Loading…');
+    try {
+      state = await call(APP + '.load') || { lists: [] };
+      if (!state.lists) state.lists = [];
+      render(); dirty = false; setStatus('Loaded', 'ok');
+    } catch (err) { setStatus('Load failed: ' + err.message, 'error'); }
+  }
+
+  async function save() {
+    setStatus('Saving…');
+    try {
+      await call(APP + '.save', { token: $('#token').value, board: state });
+      dirty = false; setStatus('Saved ✓', 'ok');
+    } catch (err) { setStatus('Save failed: ' + err.message, 'error'); }
+  }
+
+  $('#saveBtn').addEventListener('click', save);
+  $('#reloadBtn').addEventListener('click', () => {
+    if (dirty && !confirm('Reload from server and discard unsaved changes?')) return;
+    load();
+  });
+
+  // ── Model helpers ───────────────────────────────────────────────────────────────
+  const findList = id => state.lists.find(l => l.id === id);
+  function addList() {
+    state.lists.push({ id: uid(), title: 'New column', cards: [] });
+    markDirty(); render();
+  }
+  function deleteList(id) {
+    const l = findList(id);
+    if (l && l.cards.length && !confirm('Delete "' + l.title + '" and its ' + l.cards.length + ' card(s)?')) return;
+    state.lists = state.lists.filter(l => l.id !== id); markDirty(); render();
+  }
+  function addCard(listId) {
+    const l = findList(listId); if (!l) return;
+    const card = { id: uid(), title: '', description: '', dueDate: '', color: '' };
+    l.cards.push(card); markDirty();
+    openModal(listId, card.id, /*isNew*/true);
+  }
+
+  // ── Drag state sync (read DOM order back into the model) ─────────────────────────
+  function syncFromDom() {
+    const lists = [...document.querySelectorAll('.list')].map(listEl => {
+      const id = listEl.dataset.listId;
+      const model = findList(id) || { id, title: listEl.querySelector('.list-title').value, cards: [] };
+      const byId = Object.fromEntries(model.cards.map(c => [c.id, c]));
+      const cards = [...listEl.querySelectorAll('.card')].map(cEl => byId[cEl.dataset.cardId]).filter(Boolean);
+      return { id, title: model.title, cards };
+    });
+    state.lists = lists;
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────────
+  function render() {
+    const board = $('#board');
+    board.innerHTML = '';
+    state.lists.forEach(list => board.appendChild(renderList(list)));
+
+    const addBtn = document.createElement('button');
+    addBtn.id = 'add-list'; addBtn.textContent = '+ Add column';
+    addBtn.onclick = addList;
+    board.appendChild(addBtn);
+
+    initSortables();
+  }
+
+  function renderList(list) {
+    const el = document.createElement('div');
+    el.className = 'list'; el.dataset.listId = list.id;
+
+    const head = document.createElement('div');
+    head.className = 'list-head';
+
+    const title = document.createElement('input');
+    title.className = 'list-title'; title.value = list.title;
+    title.addEventListener('change', () => { list.title = title.value.trim() || 'Untitled'; title.value = list.title; markDirty(); });
+
+    const count = document.createElement('span');
+    count.className = 'count'; count.textContent = list.cards.length;
+
+    const del = document.createElement('button');
+    del.className = 'icon-btn'; del.textContent = '🗑'; del.title = 'Delete column';
+    del.onclick = () => deleteList(list.id);
+
+    head.append(title, count, del);
+
+    const cards = document.createElement('ul');
+    cards.className = 'cards'; cards.dataset.listId = list.id;
+    list.cards.forEach(c => cards.appendChild(renderCard(list.id, c)));
+
+    const add = document.createElement('button');
+    add.className = 'add-card'; add.textContent = '+ Add card';
+    add.onclick = () => addCard(list.id);
+
+    el.append(head, cards, add);
+    return el;
+  }
+
+  function renderCard(listId, card) {
+    const li = document.createElement('li');
+    li.className = 'card'; li.dataset.cardId = card.id;
+
+    if (card.color && COLORS[card.color]) {
+      const strip = document.createElement('div');
+      strip.className = 'strip'; strip.style.background = COLORS[card.color];
+      li.appendChild(strip);
+    }
+    const ttl = document.createElement('div');
+    ttl.className = 'ttl'; ttl.textContent = card.title || '(untitled)';
+    li.appendChild(ttl);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    if (card.dueDate) {
+      const b = document.createElement('span');
+      const over = card.dueDate < todayStr();
+      b.className = 'badge' + (over ? ' due-over' : '');
+      b.textContent = '📅 ' + fmtDate(card.dueDate);
+      meta.appendChild(b);
+    }
+    if (card.description) {
+      const b = document.createElement('span');
+      b.className = 'badge has-desc'; b.textContent = '≡'; b.title = 'Has description';
+      meta.appendChild(b);
+    }
+    if (meta.children.length) li.appendChild(meta);
+
+    li.addEventListener('click', () => openModal(listId, card.id, false));
+    return li;
+  }
+
+  function todayStr() { return new Date().toISOString().slice(0,10); }
+  function fmtDate(s) {
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  // ── SortableJS init (touch + mouse) ──────────────────────────────────────────────
+  function initSortables() {
+    const board = $('#board');
+    // Reorder columns. Handle is the list itself but ignore drags starting on inputs/cards.
+    new Sortable(board, {
+      animation: 150, draggable: '.list', filter: '.list-title, .cards, .add-card, .icon-btn',
+      preventOnFilter: false,
+      onEnd: () => { syncFromDom(); markDirty(); },
+    });
+    // Cards: drag within and across columns (shared group).
+    document.querySelectorAll('.cards').forEach(ul => {
+      new Sortable(ul, {
+        group: 'cards', animation: 150, draggable: '.card',
+        delay: 120, delayOnTouchOnly: true, // long-press to drag on touch, so taps still open the card
+        ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
+        onEnd: () => { syncFromDom(); render(); markDirty(); }, // re-render to refresh per-column counts
+      });
+    });
+  }
+
+  // ── Card modal ────────────────────────────────────────────────────────────────────
+  function buildSwatches() {
+    const wrap = $('#m-swatches'); wrap.innerHTML = '';
+    const none = document.createElement('div'); none.className = 'swatch none'; none.dataset.color = '';
+    wrap.appendChild(none);
+    Object.entries(COLORS).forEach(([key, val]) => {
+      const s = document.createElement('div'); s.className = 'swatch'; s.style.background = val; s.dataset.color = key;
+      wrap.appendChild(s);
+    });
+    wrap.querySelectorAll('.swatch').forEach(s => s.onclick = () => {
+      wrap.querySelectorAll('.swatch').forEach(x => x.classList.remove('sel'));
+      s.classList.add('sel');
+    });
+  }
+  function selectSwatch(color) {
+    $('#m-swatches').querySelectorAll('.swatch').forEach(s =>
+      s.classList.toggle('sel', s.dataset.color === (color || '')));
+  }
+
+  function openModal(listId, cardId, isNew) {
+    const card = findList(listId).cards.find(c => c.id === cardId);
+    editing = { listId, cardId, isNew };
+    $('#m-title').value = card.title || '';
+    $('#m-desc').value  = card.description || '';
+    $('#m-due').value   = card.dueDate || '';
+    selectSwatch(card.color || '');
+    $('#modalBack').classList.add('open');
+    setTimeout(() => $('#m-title').focus(), 30);
+  }
+  function closeModal() { $('#modalBack').classList.remove('open'); editing = null; }
+
+  function saveModal() {
+    if (!editing) return;
+    const card = findList(editing.listId).cards.find(c => c.id === editing.cardId);
+    card.title = $('#m-title').value.trim();
+    card.description = $('#m-desc').value;
+    card.dueDate = $('#m-due').value;
+    card.color = ($('#m-swatches .swatch.sel') || {}).dataset?.color || '';
+    if (!card.title && editing.isNew) { // discard empty brand-new card
+      const l = findList(editing.listId); l.cards = l.cards.filter(c => c.id !== card.id);
+    }
+    closeModal(); markDirty(); render();
+  }
+  function deleteCard() {
+    if (!editing) return;
+    const l = findList(editing.listId);
+    l.cards = l.cards.filter(c => c.id !== editing.cardId);
+    closeModal(); markDirty(); render();
+  }
+
+  $('#m-save').onclick = saveModal;
+  $('#m-delete').onclick = deleteCard;
+  $('#m-cancel').onclick = () => {
+    if (editing && editing.isNew && !$('#m-title').value.trim()) deleteCard(); else closeModal();
+  };
+  $('#modalBack').addEventListener('click', e => { if (e.target === $('#modalBack')) $('#m-cancel').click(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && editing) $('#m-cancel').click(); });
+
+  // ── Go ────────────────────────────────────────────────────────────────────────────
+  buildSwatches();
+  load();
+</script>
+</body>
+</html>
