@@ -1,0 +1,5 @@
+# Images are published by mainWebsite.js via GitHub API — not local git
+images/
+
+.DS_Store
+Thumbs.db
