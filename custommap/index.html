@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>List of Attractions and their GPS coordinates</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#10231b; --panel:#16302541; --line:rgba(255,255,255,.1);
+    --ink:#f4efe6; --muted:#9fb4a8; --accent:#c97c3a; --sage:#7aab8a;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'DM Sans',system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  #app{display:flex;height:100vh;overflow:hidden}
+
+  #sidebar{width:360px;flex-shrink:0;display:flex;flex-direction:column;background:#0d1d16;border-right:1px solid var(--line)}
+  #sidebar header{padding:22px 22px 16px;border-bottom:1px solid var(--line)}
+  #sidebar h1{font-family:'Playfair Display',Georgia,serif;font-size:1.45rem;font-weight:700;line-height:1.2}
+  #sidebar .sub{margin-top:6px;color:var(--muted);font-size:.82rem}
+  .search{padding:14px 18px;border-bottom:1px solid var(--line)}
+  .search input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--line);
+    background:rgba(255,255,255,.06);color:var(--ink);font-size:.9rem;outline:none}
+  .search input::placeholder{color:rgba(255,255,255,.35)}
+
+  #list{overflow-y:auto;flex:1}
+  .item{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+  .item:hover,.item.active{background:rgba(122,171,138,.12)}
+  .thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.05)}
+  .thumb.empty{display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--muted)}
+  .item .meta{min-width:0}
+  .item .nm{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .cat{color:var(--sage);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .item .ex{color:var(--muted);font-size:.8rem;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  #map{flex:1}
+  .leaflet-popup-content{margin:0;width:240px!important}
+  .pop img{width:100%;height:140px;object-fit:cover;display:block;border-radius:8px 8px 0 0}
+  .pop .pad{padding:10px 12px 12px}
+  .pop h3{font-size:1rem;margin-bottom:4px;color:#1e3a2f}
+  .pop .pcat{color:#3d6b54;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
+  .pop p{font-size:.82rem;color:#36433c;margin-top:6px;max-height:84px;overflow:auto}
+  .pop button{margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:20px;
+    padding:7px 16px;font-size:.8rem;cursor:pointer}
+
+  #modal{position:fixed;inset:0;background:rgba(8,16,12,.9);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+  #modal.show{display:flex}
+  .card{background:#13271e;border:1px solid var(--line);border-radius:16px;max-width:760px;width:100%;max-height:90vh;overflow:auto}
+  .card .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;padding:6px}
+  .card .gal img{width:100%;height:140px;object-fit:cover;border-radius:8px;cursor:zoom-in}
+  .card .body{padding:18px 22px 24px}
+  .card h2{font-family:'Playfair Display',Georgia,serif;font-size:1.6rem}
+  .card .mcat{color:var(--sage);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+  .card .desc{margin-top:14px;color:#d9e4dd;line-height:1.65;white-space:pre-wrap;font-size:.95rem}
+  .card .close{float:right;background:none;border:none;color:var(--muted);font-size:1.6rem;cursor:pointer;line-height:1}
+
+  #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:10000;cursor:zoom-out}
+  #lightbox.show{display:flex}
+  #lightbox img{max-width:94vw;max-height:94vh;border-radius:8px}
+
+  .mobile-toggle{display:none}
+  @media(max-width:760px){
+    #app{flex-direction:column}
+    #sidebar{width:100%;height:auto;max-height:46vh}
+    #map{height:54vh}
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap');
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <header>
+      <h1>List of Attractions and their GPS coordinates</h1>
+      <div class="sub" id="count"></div>
+    </header>
+    <div class="search"><input id="q" type="text" placeholder="Search places…" /></div>
+    <div id="list"></div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<div id="modal"><div class="card">
+  <div class="body">
+    <button class="close" onclick="closeModal()">×</button>
+    <h2 id="m-name"></h2>
+    <div class="mcat" id="m-cat"></div>
+    <div class="gal" id="m-gal"></div>
+    <div class="desc" id="m-desc"></div>
+  </div>
+</div></div>
+
+<div id="lightbox" onclick="this.classList.remove('show')"><img id="lb-img" alt="" /></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var PLACES = [{"name":"**Katerskill Falls parking 1 - wheelchair accessible**","description":"Laurel House parking. Pros: 1) Wheelchair OK  2) Super short hike to the top of the falls viewing platform Cons:  Very hard/impossible to find parking, On busy days, cops won't even let you get close. Be there before 10.. Earlier the better  or Go to the historical society parking lot instead. Kaaterskill trolly is always a good option.","lat":42.1956523,"lng":-74.0630392,"category":"adventure","images":["place_0_0.png"]},{"name":"**Kaaterskill falls parking 2 WheelChair**Old train station 1.5 mile *easy park*","description":"Easy to find parking to Katerskill falls. 1.5 miles to the actual viewing platform","lat":42.1947172,"lng":-74.0924515,"category":"adventure","images":[]},{"name":"*Kaaterskill falls parking 3** a bit too far","description":"Once you park here, its a nice long hike to the falls (did I say long?) North Point and Badman's Cave Loop  5.6 mile lightly trafficked loop trail.","lat":42.2010463,"lng":-74.0580714,"category":"adventure","images":["place_2_0.png","place_2_1.png","place_2_2.png"]},{"name":"**My favorite**Overlook Fire Tower","description":"Why my favorite? Super close to 1.Woodstock, 2. Overlook mountain House ruins and 3 KTD tibetal monestary. You can combine all three into one trip.","lat":42.085045,"lng":-74.0934028,"category":"adventure","images":["place_3_0.png"]},{"name":"Buy Firewood locally!","description":"1. Stewart Gas stations  2.Some Dollar generals 3.ALL Walmarts  4.If you see \"campwood\" sign, they are sold by local households and are cheaper","lat":42.083984,"lng":-73.9716,"category":"adventure","images":[]},{"name":"Highest fire tower in NY!","description":"Directions: Take the Spruceton Trail, marked with blue disks, from Greene County Route 6 (Spruceton Hollow Road) in the hamlet of Spruceton. A seven-mile moderately-difficult round trip hike. Or take the yellow-marked trail from the Hunter Mt. Sky Ride when it is open-a moderate four-mile round-trip hike.   This tower has the unique distinction of being located at the highest elevation of any fire tower in New York State. The original tower on Hunter Mountain-constructed of logs-was built in 1909, and was the first of three fire towers constructed in the Catskills that year. The original tower was 40 feet tall, and was replaced with a steel tower 60 feet high in 1917. That tower was originally placed at an elevation of 4,000 feet-a third of a mile from the true summit-but was removed and reset at its present site on the true summit in 1953.","lat":42.1918638,"lng":-74.325049,"category":"adventure","images":["place_5_0.png"]},{"name":"Zoom Flume Water Park","description":"","lat":42.3792924,"lng":-74.1451661,"category":"adventure","images":[]},{"name":"Devil's Path Trail","description":"","lat":42.1339443,"lng":-74.1044684,"category":"adventure","images":[]},{"name":"Horseback Riding","description":"","lat":42.216451,"lng":-74.0063951,"category":"adventure","images":[]},{"name":"Palenville Overlook","description":"Walking distance from Palenville","lat":42.18121,"lng":-74.0363368,"category":"adventure","images":["place_9_0.png"]},{"name":"Catskill Mountain Railroad","description":"$15 ticket takes you through mountain, bridges and farmland","lat":41.9354088,"lng":-74.0153554,"category":"adventure","images":["place_10_0.png","place_10_1.png","place_10_2.png"]},{"name":"Human powered train!","description":"","lat":42.0801662,"lng":-74.3080429,"category":"adventure","images":["place_11_0.png","place_11_1.png"]},{"name":"First fire tower in NY","description":"Directions to the tower: Follow the blue-marked Dry Brook Ridge Trail located on Mill Brook Road outside the hamlet of Arkville. This is a moderate, six-mile round-trip hike.  Balsam Lake Mountain fire tower, open Memorial Day through Columbus Day, is the first forest fire tower in New York State and was erected on Balsam Lake Mountain (elevation 3,723 ft.) in 1887. Built of wood by the Balsam Lake Club, it survived until 1901 and was replaced with another wooden tower in 1905. Telephone lines, a small observer's cabin and a road to the summit were added in 1909 when the state took it over. The first steel tower was erected in 1919, and the present steel tower (47 feet tall) was built in 1930.","lat":42.0703929,"lng":-74.5737779,"category":"adventure","images":["place_12_0.png"]},{"name":"Fishing - Colgate Lake","description":"","lat":42.235693,"lng":-74.1203256,"category":"adventure","images":[]},{"name":"Kaaterskill trolly-- best thing ever!","description":"Checkout Kaaterskilltrolley.com .Take the trolley rright from palenville and avoid all the parking hassles. It will take u to all the attractions all the way to Hunter","lat":42.1940864,"lng":-74.0899754,"category":"adventure","images":[]},{"name":"High Falls Conservation Area","description":"","lat":42.2471274,"lng":-73.6575053,"category":"adventure","images":[]},{"name":"*Kaaterskill Falls - Must have photos - platform, top, middle","description":"1) View the Entire falls from this platform \n2) **Danger!! Danger! Walk to the top of the falls  3) Walk 30 mins to the Middle falls and go to the cave behind the falls","lat":42.1938333,"lng":-74.0636208,"category":"adventure","images":["place_16_0.png","place_16_1.png","place_16_2.png"]},{"name":"*Hudson*Upper Depot Brewing","description":"","lat":42.2484436,"lng":-73.7813949,"category":"Nightlife/Restaurants/Farmers market","images":["place_17_0.png"]},{"name":"*Saugerties -Drink with waterfall view*Diamond Mills Hotel","description":"","lat":42.0727778,"lng":-73.9502778,"category":"Nightlife/Restaurants/Farmers market","images":["place_18_0.png"]},{"name":"Hudson*My favorite bar in Hudson","description":"Open late, live music, outdoor seating","lat":42.2516114,"lng":-73.7897638,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"**My favorite food place **The Pantry On Main","description":"","lat":42.196083,"lng":-74.134,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Palenville breakfast* Brunch*organic local market","description":"Circle W market . A piece of Brooklyn in the middle of the country! Walking distance from our Palenville location, excellent breakfast , lunch and coffee","lat":42.1751513,"lng":-74.0218316,"category":"Nightlife/Restaurants/Farmers market","images":["place_21_0.png","place_21_1.png","place_21_2.png","place_21_3.png"]},{"name":"Farmers market at Story Farms","description":"","lat":42.191521,"lng":-73.9859013,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Hudson Whitecliff Vineyard","description":"","lat":42.2177444,"lng":-73.837732,"category":"Nightlife/Restaurants/Farmers market","images":["place_23_0.png"]},{"name":"Rip Van Winkle Brewing Company","description":"","lat":42.185368,"lng":-73.9859434,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Home food delivery","description":"*call the restaurants directly instead of using apps ( gubhub, seamless)  to save money\nnamaste indian retrurant (845) 247-3590","lat":42.170157,"lng":-74.011767,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"woodstock- my favorite bakery+ great soup and coffee","description":"best bakery in woodstock","lat":42.040489,"lng":-74.1176087,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Palenville*walk* Restaurant in Country Club","description":"I have never been there ! Wednesday through Friday, from 5 pm until 8:30 pm. PM  http://rvwcc.com/index.php/dinner-menu-2/","lat":42.1756194,"lng":-74.0159061,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill* Day time brewery+ pizza","description":"piece of Brooklyn in the catskills. Gluten free pizza","lat":42.2167307,"lng":-73.8729178,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill*-- The only Thai food in Catskill","description":"the owner is married to a Thai lady and they visit Thailand to get inspirations from Bangkok's street food market in Yaowarat. Food is not bad","lat":42.2178614,"lng":-73.8647173,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Saugerties**food serve till midnight**Pig Bar","description":"I like their Asian influenced innovative food","lat":42.076757,"lng":-73.952112,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill**river view*Frank Guido's Port of Call","description":"a bit pricey seafood place with some great views of the river","lat":42.2102167,"lng":-73.8543949,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Woodstock**open till 2 am!!**Station Bar & Curio","description":"Want to party with the hippies of the 70s ? This is  your spot","lat":42.0400912,"lng":-74.1236869,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Woodstock**open till 2 am** + chinese food*The Little Bear","description":"another place to dance with the hippies of the 70s. outdoor fireplace .. Chinese food place clsoes at 11. All times change frequently, so call to confirm","lat":42.0401998,"lng":-74.1544465,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill**Late night meditation/drag shows/ korean food* soju*The Avalon Lounge","description":"My favorite place in Catskill. Say hi to big dan and tell him I sent you there!","lat":42.220429,"lng":-73.867088,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill- coffee shop and bar, live music","description":"l","lat":42.2185381,"lng":-73.8654412,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Catskill - Brewery- food truck","description":"games,great beer .food truck. overall fun place","lat":42.2208002,"lng":-73.8677725,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Hoebowl Bowling Center","description":"","lat":42.2136056,"lng":-73.8845,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Tousey Winery","description":"","lat":42.085529,"lng":-73.825777,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Vinnie's Farm Market","description":"smoked fish, baked goods, veggies, honey, flowers-- more selection than story farm","lat":42.1356023,"lng":-74.0009877,"category":"Nightlife/Restaurants/Farmers market","images":[]},{"name":"Dog friendly places","description":"Miost places used to be Dog friendly. The health department is cracking down on allowing dogs inside. The restaurants are responding by creating outdoor spaces for dogs. This changes all the time so, it is best to call the restaurants.","lat":42.1590368,"lng":-73.8858673,"category":"Dog friendly places","images":[]},{"name":"**sometimes closed, ask locals**Marble rock probably the best swimming hole in New York","description":"The owners periodically close this place. WhileA natural spa, full of cascades and small pools and a large lake . Jump into the warm water from the cliffs. 1) Go to \"INN AT LEEDS\" 2) Go all the way to the back until you see the Dumpsters. Park there. 3) Walk STRAIGHT, Going past the electrical panel and generator until you see Water.","lat":42.2543884,"lng":-73.9016593,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_41_0.png","place_41_1.png"]},{"name":"40 ft cliff jump Fawn's Leap","description":"High adrenaline 40 foot jump  . **Illegally parked cars towed**. 1) Use Kaaterskill trolly 2) Park at Harding road trailhead, Palenville 3)Uber/Hitchhike 4) Try your luck for the 6 available parking spots along the way","lat":42.1773253,"lng":-74.057276,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_42_0.png","place_42_1.png","place_42_2.jpg"]},{"name":"Peekamoose Blue Hole","description":"https://www.dec.ny.gov/lands/109922.html","lat":41.9164326,"lng":-74.4250903,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_43_0.png"]},{"name":"Rats hole..illegally parked cars towed","description":"**Illegally parked cars towed**. 1) Use Kaaterskill trolly 2) Park at Harding road trailhead, Palenville 3)Uber/Hitchhike 4) Try your luck for the 6 available parking spots along the way","lat":42.1768945,"lng":-74.0452663,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":[]},{"name":"North-South Lake -Cute beach-Fishing Boat rental","description":"","lat":42.199131,"lng":-74.041072,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_45_0.png"]},{"name":"**walk/bike**city is trying to restrict access because of trash problem","description":"but its super close, and go and check whats up","lat":42.1698515,"lng":-74.0164531,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_46_0.png"]},{"name":"Lake Taghkanic State Park","description":"","lat":42.0908988,"lng":-73.7182607,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":[]},{"name":"Big Deep**town owed, but may be closed because of trash left by people**","description":"BIG DEEP, WOODSTOCK\n\nThis is a popular swimming area, with a pretty jade lagoon surrounded by forest. The parking area is just a road side pull off, and Casablanca Lane is very close to it, so you can keep an eye out for that. Once you park, you follow a well worn trail down to the water.\n\nThere is a rope swing and a small upper area as well. The water seems to be about 4ft. deep. We were there during a cloudy day, but the water is a brilliant turquoise in the sunlight.  Casablanca Lane is a private road, with no public access to the swimming area. Please use the lane as a landmark only, and do not drive down this road. The entrance to the parking area is east of Casablanca Lane.","lat":42.0359278,"lng":-74.0977972,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_48_0.png"]},{"name":"MILLSTREAM, WOODSTOCK**Private property, closed due to recent trash problem**","description":"Example of why we can't have nice things. The owners had to close it.","lat":42.0369166666667,"lng":-74.1195555555556,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_49_0.png"]},{"name":"Little deep, woodstock","description":"From NY-212, turn onto W Hurley-Zena Rd for about .3 miles, and you’ll see a parking area on your right. The trail to Little Deep in just north of the river as you follow it upstream (the path is very obvious). The actual Little Deep is just a few minutes from the parking area. It’s a small area where the river widens into a pool that is very popular among local families. The water is cloudy, but seems clean. If you continue up the path about ten minutes, you will come to a dam. We didn’t see anyone swimming here, but it is a pretty area to visit.","lat":42.037786,"lng":-74.085436,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_50_0.png"]},{"name":"**walk/bike**not sure if private","description":"","lat":42.1721495,"lng":-74.0190513,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":["place_51_0.png"]},{"name":"red falls","description":"Red Falls\nNatural Swimming Hole. Large and small cascades\nover flat rocks stepping down to large deep pool. Some\nhigher cascades allow jumping into narrow, deeply\neroded slots. Remnants of old rock RR support allows\nvarying levels of high jumps into large, deep pool. Lots\nof fun.\nDirections from Hunter : RT 23A West to RT 23.\nMake right turn onto RT 23. Approx 1.5 to 2 miles east,\nPark on right side across from Dent Rd. (Parking is not\npermitted on the roadside, but there is a small pull out\ninto the trees here where a few cars can squeeze in.","lat":42.30851,"lng":-74.39024,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":[]},{"name":"Millstream Swimming Hole","description":"","lat":42.0374104,"lng":-74.1154623,"category":"Swimming / Lakes /beaches/ Cliff Jumps","images":[]},{"name":"MASS MoCA","description":"","lat":42.7015377526005,"lng":-73.1138678267598,"category":"art installations","images":[]},{"name":"Art Omi","description":"","lat":42.330543,"lng":-73.672084,"category":"art installations","images":["place_55_0.png"]},{"name":"Dia:Beacon","description":"","lat":41.5000753,"lng":-73.9825664,"category":"art installations","images":["place_56_0.png"]},{"name":"Olana State Historic Site","description":"https://www.youtube.com/embed/attmZeJsGCk \n\n50 acres of state  park. Estate of Frederick Church","lat":42.2138197,"lng":-73.827853,"category":"art installations","images":["place_57_0.jpg","place_57_1.png"]},{"name":"All Souls Church","description":"Makes great Instagram moment","lat":42.224551494895,"lng":-74.1338793933392,"category":"instagram !!","images":["place_58_0.jpg"]},{"name":"Opus 40","description":"","lat":42.0513192,"lng":-74.0319722,"category":"instagram !!","images":["place_59_0.jpg"]},{"name":"Drink and watch waterfalls","description":"Diamost mills is a historic mill converted to a hotel.","lat":42.0728451,"lng":-73.9503371,"category":"instagram !!","images":["place_60_0.jpg"]},{"name":"Hudson Athens Lighthouse* book a tour*","description":"Book tours on https://halps.org/index.html#header9-3","lat":42.2519794,"lng":-73.8086823,"category":"instagram !!","images":["place_61_0.png","place_61_1.png"]},{"name":"Saugerties Lighthouse","description":"","lat":42.0719942,"lng":-73.9298129,"category":"instagram !!","images":["place_62_0.jpg"]},{"name":"**My favorite* Karma Triyana Dharmachakra","description":"Why my favorite? Super close to 1.Woodstock, 2. Overlook mountain House ruins and 3.the fire tower. You can combine all three into one trip.","lat":42.070934,"lng":-74.1237052,"category":"Monasteries/ Retreats","images":["place_63_0.png"]},{"name":"Mahayana Temple","description":"","lat":42.3119107,"lng":-73.9468014,"category":"Monasteries/ Retreats","images":[]},{"name":"Zen Mountain Monastery","description":"","lat":42.048224,"lng":-74.277209,"category":"Monasteries/ Retreats","images":[]},{"name":"Menla","description":"","lat":42.0676776,"lng":-74.3709397,"category":"Monasteries/ Retreats","images":[]},{"name":"Most Scenic but dangerous-closed in winter -platte cove road","description":"Can be difficult to drive especially at night.. a lot of hairpin turns,must do in fall--road","lat":42.1449433,"lng":-74.1073519,"category":"scenic bike ride/ car ride","images":[]},{"name":"sunrise dairy farm","description":"scenic road to Catskill town full of swimming holes. just follow the katerskil creek","lat":42.2237423531135,"lng":-73.938329257071,"category":"scenic bike ride/ car ride","images":[]},{"name":"beautiful bridge","description":"","lat":42.2204202692735,"lng":-73.90002630651,"category":"scenic bike ride/ car ride","images":[]},{"name":"95 Pine Avenue, Palenville, NY, USA","description":"","lat":42.169534,"lng":-74.011767,"category":"Scenic route to hunter mountain from palenville","images":[]},{"name":"Hunter Mountain Resort, Klein Avenue, Hunter, NY, USA","description":"","lat":42.206852,"lng":-74.2200152,"category":"Scenic route to hunter mountain from palenville","images":[]},{"name":"95 Pine Avenue, Palenville, NY, USA","description":"","lat":42.169534,"lng":-74.011767,"category":"Safer and longer route to Hunter/windham ski- better views","images":[]},{"name":"McDonald's, New York 32, Cairo, NY, USA","description":"","lat":42.2966083,"lng":-73.9898821,"category":"Safer and longer route to Hunter/windham ski- better views","images":[]},{"name":"Hunter Mountain Resort, Klein Avenue, Hunter, NY, USA","description":"","lat":42.206852,"lng":-74.2200152,"category":"Safer and longer route to Hunter/windham ski- better views","images":[]}];
+var IMG_BASE = "images/";
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
+});
+
+var map = L.map("map",{scrollWheelZoom:true});
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19, attribution:"&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function imgUrl(f){return IMG_BASE+f;}
+
+var markers=[], bounds=[];
+PLACES.forEach(function(p,i){
+  var m=L.marker([p.lat,p.lng]).addTo(map);
+  m.bindPopup(popupHtml(p,i),{maxWidth:260});
+  m.on("popupopen",function(){var b=document.getElementById("more-"+i);if(b)b.onclick=function(){openModal(i);};});
+  markers.push(m); bounds.push([p.lat,p.lng]);
+});
+if(bounds.length) map.fitBounds(bounds,{padding:[40,40]}); else map.setView([20,0],2);
+
+function popupHtml(p,i){
+  var img=(p.images&&p.images.length)?'<img src="'+esc(imgUrl(p.images[0]))+'" alt="">':"";
+  var cat=p.category?'<div class="pcat">'+esc(p.category)+'</div>':"";
+  var d=p.description?'<p>'+esc(p.description).replace(/\n/g,"<br>")+'</p>':"";
+  return '<div class="pop">'+img+'<div class="pad">'+cat+'<h3>'+esc(p.name)+'</h3>'+d+
+         '<button id="more-'+i+'">View details</button></div></div>';
+}
+
+var listEl=document.getElementById("list");
+function renderList(filter){
+  filter=(filter||"").toLowerCase();
+  listEl.innerHTML="";
+  var shown=0;
+  PLACES.forEach(function(p,i){
+    var hay=(p.name+" "+p.category+" "+p.description).toLowerCase();
+    if(filter && hay.indexOf(filter)<0) return;
+    shown++;
+    var t=(p.images&&p.images.length)
+      ? '<img class="thumb" src="'+esc(imgUrl(p.images[0]))+'" alt="">'
+      : '<div class="thumb empty">📍</div>';
+    var ex=p.description?'<div class="ex">'+esc(p.description)+'</div>':"";
+    var cat=p.category?'<div class="cat">'+esc(p.category)+'</div>':"";
+    var div=document.createElement("div");
+    div.className="item"; div.setAttribute("data-i",i);
+    div.innerHTML=t+'<div class="meta"><div class="nm">'+esc(p.name)+'</div>'+cat+ex+'</div>';
+    div.onclick=function(){focusPlace(i);};
+    listEl.appendChild(div);
+  });
+  document.getElementById("count").textContent=shown+" place"+(shown===1?"":"s");
+}
+
+function focusPlace(i){
+  var p=PLACES[i];
+  map.flyTo([p.lat,p.lng],Math.max(map.getZoom(),14),{duration:.6});
+  markers[i].openPopup();
+  document.querySelectorAll(".item").forEach(function(el){
+    el.classList.toggle("active", el.getAttribute("data-i")==String(i));
+  });
+}
+
+function openModal(i){
+  var p=PLACES[i];
+  document.getElementById("m-name").textContent=p.name;
+  document.getElementById("m-cat").textContent=p.category||"";
+  document.getElementById("m-desc").textContent=p.description||"";
+  var gal=document.getElementById("m-gal"); gal.innerHTML="";
+  (p.images||[]).forEach(function(f){
+    var im=document.createElement("img");
+    im.src=imgUrl(f); im.alt=p.name;
+    im.onclick=function(){var lb=document.getElementById("lb-img");lb.src=im.src;document.getElementById("lightbox").classList.add("show");};
+    gal.appendChild(im);
+  });
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){document.getElementById("modal").classList.remove("show");}
+document.getElementById("modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeModal();document.getElementById("lightbox").classList.remove("show");}});
+
+document.getElementById("q").addEventListener("input",function(){renderList(this.value);});
+renderList("");
+</script>
+</body>
+</html>
