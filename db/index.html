@@ -475,6 +475,11 @@ let availState = {
   checking: false
 };
 
+function cabinTileImageUrl(cabinName) {
+  const slug = cabinName.toLowerCase().replace(/\s+/g, '_');
+  return '/image/' + slug + '/0.jpg';
+}
+
 // ── Init: Load property data ───────────────────────────────
 (async function init() {
   const data = await apiCall('init');
@@ -517,7 +522,7 @@ let availState = {
     wrap.className = 'tile-img-wrap';
     const img = document.createElement('img');
     img.className = 'tile-img';
-    img.src = p.imageUrl || '';
+    img.src = cabinTileImageUrl(p.name);
     img.alt = p.name;
     img.loading = 'lazy';
     img.onerror = function() { this.style.display = 'none'; };
