@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Hudson Getaways">
+  <rect width="32" height="32" rx="6" fill="#1e3a2f"/>
+  <path fill="#3d6b54" d="M6 20h20v8H6z"/>
+  <path fill="#f5f0e8" d="M4 20 L16 10 L28 20 Z"/>
+  <rect x="13" y="22" width="6" height="6" fill="#c97c3a"/>
+  <rect x="9" y="21" width="3" height="3" fill="#c97c3a"/>
+  <rect x="20" y="21" width="3" height="3" fill="#c97c3a"/>
+  <rect x="14" y="8" width="4" height="4" fill="#f5f0e8"/>
+</svg>
