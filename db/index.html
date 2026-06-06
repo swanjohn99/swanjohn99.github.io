@@ -475,9 +475,17 @@ let availState = {
   checking: false
 };
 
-function cabinTileImageUrl(cabinName) {
-  const slug = cabinName.toLowerCase().replace(/\s+/g, '_');
-  return '/image/' + slug + '/0.jpg';
+function cabinImageSlug(cabinName) {
+  return cabinName.toLowerCase().replace(/\s+/g, '_');
+}
+
+function cabinTileImagePaths(cabinName) {
+  const base = '/images/' + cabinImageSlug(cabinName) + '/';
+  return {
+    thumb:  base + 'thumb_0.jpg',
+    medium: base + 'medium_0.jpg',
+    full:   base + 'full_0.jpg'
+  };
 }
 
 // ── Init: Load property data ───────────────────────────────
@@ -522,7 +530,10 @@ function cabinTileImageUrl(cabinName) {
     wrap.className = 'tile-img-wrap';
     const img = document.createElement('img');
     img.className = 'tile-img';
-    img.src = cabinTileImageUrl(p.name);
+    const paths = cabinTileImagePaths(p.name);
+    img.src = paths.medium;
+    img.srcset = paths.thumb + ' 400w, ' + paths.medium + ' 800w, ' + paths.full + ' 1600w';
+    img.sizes = '(max-width: 380px) 100vw, (max-width: 600px) 50vw, 280px';
     img.alt = p.name;
     img.loading = 'lazy';
     img.onerror = function() { this.style.display = 'none'; };
