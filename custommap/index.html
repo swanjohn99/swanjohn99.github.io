@@ -23,15 +23,21 @@
   .filter-btn:hover{background:rgba(122,171,138,.15)}
   .filter-btn.cabin.active{background:var(--accent);border-color:var(--accent);color:#fff}
   .filter-btn.layer.active{background:var(--sage);border-color:var(--sage);color:#10231b}
+  #book-row-desktop{display:flex}
+  .book-btn{text-decoration:none;white-space:nowrap;flex-shrink:0;transition:background .15s,transform .15s,box-shadow .15s}
+  .book-btn-desktop{display:inline-flex;align-items:center;padding:11px 26px;border-radius:24px;
+    background:var(--accent);border:2px solid var(--accent);color:#fff;font-size:1rem;font-weight:700;
+    letter-spacing:.03em;box-shadow:0 3px 14px rgba(201,124,58,.4)}
+  .book-btn-desktop:hover{background:#d9894a;transform:translateY(-1px);box-shadow:0 5px 18px rgba(201,124,58,.45)}
+  .book-btn-mobile{display:none;align-items:center;padding:7px 12px;border-radius:20px;
+    background:var(--accent);border:1px solid var(--accent);color:#fff;font-size:.75rem;font-weight:600}
+  .book-btn-mobile:hover{background:#d9894a}
   #layer-row{width:100%}
   #layer-wrap{width:100%;overflow:hidden}
   #layer-wrap.collapsed{max-height:calc(2 * (0.82rem * 1.35 + 14px + 2px) + 8px)}
   #layer-wrap.expanded{max-height:none}
-  .more-btn{display:none;width:100%;margin-top:4px;padding:10px 16px;border-radius:10px;
-    border:2px solid var(--accent);background:rgba(201,124,58,.12);color:var(--accent);
-    font-size:.9rem;font-weight:700;cursor:pointer;letter-spacing:.02em}
-  .more-btn.show{display:block}
-  .more-btn:active{background:rgba(201,124,58,.25)}
+  .more-btn{display:none;flex-shrink:0}
+  .more-btn.show{display:inline-block}
   #app{display:flex;flex:1;min-height:0;overflow:hidden}
 
   #sidebar{width:360px;flex-shrink:0;display:flex;flex-direction:column;background:#0d1d16;border-right:1px solid var(--line)}
@@ -83,6 +89,9 @@
 
   @media(max-width:760px){
     #filter-shell{padding:8px 12px}
+    #book-row-desktop{display:none!important}
+    .book-btn-mobile{display:inline-flex}
+    #cabin-row{align-items:center}
     #app{flex-direction:column}
     #sidebar{width:100%;height:auto;max-height:46vh}
     #sidebar header{display:none}
@@ -98,15 +107,19 @@
 <body>
 <div id="filter-shell">
   <div id="top-bar">
+    <div class="filter-row" id="book-row-desktop">
+      <a class="book-btn book-btn-desktop" href="https://hudsongetaways.com#booking" target="_blank" rel="noopener">Book Direct! Save 30%</a>
+    </div>
     <div class="filter-row" id="cabin-row" style="display:none">
-      <span class="filter-label">Location</span>
+      <a class="book-btn book-btn-mobile" href="https://hudsongetaways.com#booking" target="_blank" rel="noopener">Book Direct! Save 30%</a>
+      <span class="filter-label" id="cabin-label">Location</span>
       <div class="filter-btns" id="cabin-btns"></div>
     </div>
     <div class="filter-row" id="layer-row" style="display:none">
       <div id="layer-wrap" class="collapsed">
         <div class="filter-btns" id="layer-btns"></div>
       </div>
-      <button type="button" id="layer-more" class="more-btn">More....</button>
+      <button type="button" id="layer-more" class="filter-btn layer more-btn">More…</button>
     </div>
   </div>
 </div>
@@ -220,7 +233,7 @@ function updateLayerMore(){
   }
   var overflow=wrap.scrollHeight>wrap.clientHeight+2;
   btn.classList.toggle("show",overflow||wrap.classList.contains("expanded"));
-  btn.textContent=wrap.classList.contains("expanded")?"Less....":"More....";
+  btn.textContent=wrap.classList.contains("expanded")?"Less…":"More…";
 }
 
 function logSortState(reason){
@@ -265,6 +278,21 @@ function sortedPlaces(filter){
   return items;
 }
 
+function updateCabinRowVisibility(){
+  var cabinRow=document.getElementById("cabin-row");
+  var cabinLabel=document.getElementById("cabin-label");
+  var hasCabins=CABINS.length>0;
+  if(hasCabins){
+    cabinRow.style.display="flex";
+    cabinLabel.style.display="";
+  } else if(window.innerWidth<=760){
+    cabinRow.style.display="flex";
+    cabinLabel.style.display="none";
+  } else {
+    cabinRow.style.display="none";
+  }
+}
+
 function initFilters(){
   var cabinRow=document.getElementById("cabin-row");
   var layerRow=document.getElementById("layer-row");
@@ -273,7 +301,6 @@ function initFilters(){
   cabinBtns.innerHTML=""; layerBtns.innerHTML="";
 
   if(CABINS.length){
-    cabinRow.style.display="flex";
     CABINS.forEach(function(c,idx){
       var btn=document.createElement("button");
       btn.type="button";
@@ -289,9 +316,8 @@ function initFilters(){
       };
       cabinBtns.appendChild(btn);
     });
-  } else {
-    cabinRow.style.display="none";
   }
+  updateCabinRowVisibility();
 
   if(LAYERS.length){
     layerRow.style.display="flex";
@@ -375,7 +401,10 @@ document.getElementById("layer-more").addEventListener("click",function(){
   updateLayerMore();
 });
 
-window.addEventListener("resize",updateLayerMore);
+window.addEventListener("resize",function(){
+  updateLayerMore();
+  updateCabinRowVisibility();
+});
 
 initFilters();
 renderList("");
