@@ -25,7 +25,7 @@
   .filter-btn.layer.active{background:var(--sage);border-color:var(--sage);color:#10231b}
   #layer-row{width:100%}
   #layer-wrap{width:100%;overflow:hidden}
-  #layer-wrap.collapsed{max-height:152px}
+  #layer-wrap.collapsed{max-height:calc(2 * (0.82rem * 1.35 + 14px + 2px) + 8px)}
   #layer-wrap.expanded{max-height:none}
   .more-btn{display:none;width:100%;margin-top:4px;padding:10px 16px;border-radius:10px;
     border:2px solid var(--accent);background:rgba(201,124,58,.12);color:var(--accent);
@@ -85,6 +85,7 @@
     #filter-shell{padding:8px 12px}
     #app{flex-direction:column}
     #sidebar{width:100%;height:auto;max-height:46vh}
+    #sidebar header{display:none}
     #map{flex:1;min-height:42vh}
   }
   @media(min-width:761px){
@@ -203,10 +204,20 @@ function updateLayerMore(){
   if(!wrap||!btn) return;
   if(!isMobileFilters()){
     wrap.classList.remove("collapsed","expanded");
+    wrap.style.maxHeight="";
     btn.classList.remove("show");
     return;
   }
   if(!wrap.classList.contains("expanded")) wrap.classList.add("collapsed");
+  if(wrap.classList.contains("expanded")){
+    wrap.style.maxHeight="none";
+  } else {
+    var firstBtn=wrap.querySelector(".filter-btn");
+    if(firstBtn){
+      var rowH=firstBtn.getBoundingClientRect().height;
+      wrap.style.maxHeight=(rowH*2+8)+"px";
+    }
+  }
   var overflow=wrap.scrollHeight>wrap.clientHeight+2;
   btn.classList.toggle("show",overflow||wrap.classList.contains("expanded"));
   btn.textContent=wrap.classList.contains("expanded")?"Less....":"More....";
