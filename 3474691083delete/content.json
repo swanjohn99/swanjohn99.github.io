@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "title": "Home | Amy Yang, MD",
+    "description": "Pacific Mind - Office of Amy J Yang MD LLC. A psychiatry practice specializing in high functioning ADHD/neurodivergent individuals and bicultural adults."
+  },
+  "navigation": [
+    { "label": "Home", "href": "https://www.yangamymd.com/", "current": true },
+    { "label": "Coaching", "href": "https://www.yangamymd.com/coaching" },
+    { "label": "Nature Programs", "href": "https://www.yangamymd.com/nature" },
+    { "label": "Contact", "href": "https://www.yangamymd.com/contact" },
+    { "label": "About", "href": "https://www.yangamymd.com/about" },
+    { "label": "Resources & FAQ", "href": "https://www.yangamymd.com/resources" }
+  ],
+  "hero": {
+    "image": "images/hero-water.jpg",
+    "imageAlt": "Abstract Water Surface",
+    "title": "Pacific Mind",
+    "subtitle": "Office of Amy J Yang MD LLC",
+    "tagline": "A psychiatry practice specializing in  high functioning ADHD/neurodivergent individuals and bicultural adults"
+  },
+  "services": {
+    "heading": "Services At a Glance",
+    "backgroundImage": "images/services-paddleboard.jpg",
+    "backgroundAlt": "Paddleboard In Ocean",
+    "items": [
+      {
+        "number": "1",
+        "title": "Psychiatry and Therapy",
+        "intro": "Speciality includes:",
+        "bullets": [
+          "High functioning ADHD and Neurodivergent adults",
+          "Adult women with ADHD",
+          "Bicultural or immigrant/first generation adults",
+          "Asian and Asian-American mental health issues",
+          "Professionals navigating professional burnout"
+        ],
+        "buttonLabel": "More Info",
+        "buttonHref": "https://www.yangamymd.com/about"
+      },
+      {
+        "number": "2",
+        "title": "Coaching for Professionals",
+        "bullets": [
+          "ADHD and other neurodivergent professionals",
+          "Career transitions, burnout, and evolving priorities",
+          "Professionals seeking more sustainable way of working and living",
+          "Create systems that fit your values, strengths, and responsibilities"
+        ],
+        "buttonLabel": "More Info",
+        "buttonHref": "https://www.yangamymd.com/coaching"
+      },
+      {
+        "number": "3",
+        "title": "Groups and Consultation",
+        "bullets": [
+          "Nature-Based Programs",
+          "Workshops and Groups for Intercultural and Asian American adults",
+          "Individual and Institutional Clinician Burnout Reduction Programs"
+        ],
+        "buttonLabel": "More Info",
+        "buttonHref": "https://www.yangamymd.com/nature"
+      }
+    ]
+  },
+  "cta": {
+    "backgroundImage": "images/zen-garden.jpeg",
+    "backgroundAlt": "Zen Garden Sand",
+    "heading": "Ready to take the next step?",
+    "buttonLabel": "Request Consultation",
+    "buttonHref": "https://www.yangamymd.com/contact"
+  },
+  "bio": {
+    "image": "images/succulent-plants.jpg",
+    "imageAlt": "Closeup of Succulent Plants",
+    "heading": "楊醫師簡介",
+    "paragraphs": [
+      "經歷： 芝加哥榮民醫院精神科主治醫師\n學歷：芝加哥大學精神科住院醫師\n考試： 美國神經科精神科學院精神科院士",
+      "專長： 憂鬱症、焦慮症、躁鬱症、情緒病、",
+      "創傷後壓力症候群、",
+      "學生的自我認知心理治療、",
+      "移民的跨文化社交學習能力",
+      "提供的服務： 精神病理診斷、",
+      "個人及團體心理治療和精神藥物治療"
+    ]
+  },
+  "story": {
+    "backgroundImage": "images/nature-tokens.jpg",
+    "backgroundAlt": "Nature Tokens",
+    "heading": "The Story",
+    "paragraphs": [
+      "What does finding home in ourselves look like?",
+      "What does finding belonging in the world feel like?",
+      "These were the answers I was searching for, unconsciously, when I started my journey as a psychiatrist. Questions I felt was missing in standard psychiatry guidelines but integral to the ultimate reason why I became interested in the mind.",
+      "Through individual and group therapy, mindfulness practices, and now integrating expressive arts and experiential work, I hope that we can look to explore these questions and finding the meaning and connection in our lives."
+    ]
+  },
+  "location": {
+    "office": {
+      "heading": "Office Location",
+      "addressLine1": "820 Davis St Ste 455",
+      "addressLine2": "Evanston IL 60201",
+      "description": "Located conveniently near Davis Street CTA and metra stations. Parking garage and street parking available nearby."
+    },
+    "appointments": {
+      "heading": "Appointments",
+      "schedule": [
+        "In person (Evanston): Wednesdays",
+        "Telehealth: Mondays, Tuesdays, Fridays"
+      ],
+      "hours": "Appointments are generally between 9am - 3:30pm",
+      "note": "I currently do not offer weekends or evening appointments"
+    }
+  },
+  "social": {
+    "heading": "Stay Connected",
+    "links": [
+      {
+        "label": "Psychology Today",
+        "href": "https://www.psychologytoday.com/profile/328178",
+        "image": "images/psychology-today.png"
+      },
+      {
+        "label": "Doximity",
+        "href": "https://www.doximity.com/pub/amy-yang-md-7d7c0632",
+        "image": "images/doximity.png"
+      },
+      {
+        "label": "LinkedIn",
+        "href": "https://www.linkedin.com/in/amy-j-yang-042378126/",
+        "image": "images/linkedin.png"
+      }
+    ]
+  },
+  "footer": {
+    "addressLine1": "820 Davis St Ste 455",
+    "addressLine2": "Evanston IL 60201",
+    "phone": "773-217-9266",
+    "mapLabel": "Google Map",
+    "mapHref": "https://maps.app.goo.gl/Y8V73hF7bJqVSEwy8",
+    "copyright": "©2025 by Amy Yang, MD.",
+    "social": {
+      "label": "Psychology Today",
+      "href": "https://psychiatrists.psychologytoday.com/rms/name/Amy_Yang_MD_Chicago_Illinois_328178",
+      "image": "images/psychology-today-footer.png"
+    }
+  }
+}
