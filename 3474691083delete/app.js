@@ -15,10 +15,39 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+function pickDefaultSrc(imageData) {
+  if (typeof imageData === "string") return imageData;
+  const variants = imageData.variants || [];
+  if (!variants.length) return "";
+  const viewport = window.innerWidth * (window.devicePixelRatio || 1);
+  const sorted = [...variants].sort((a, b) => a.width - b.width);
+  const match = sorted.find((v) => v.width >= viewport) || sorted[sorted.length - 1];
+  return match.src;
+}
+
+function responsiveImg(imageData, extraAttrs = {}) {
+  if (typeof imageData === "string") {
+    return el("img", { src: imageData, alt: "", ...extraAttrs });
+  }
+
+  const attrs = {
+    src: pickDefaultSrc(imageData),
+    alt: imageData.alt || "",
+    sizes: imageData.sizes || "100vw",
+    ...extraAttrs,
+  };
+
+  if (imageData.variants?.length) {
+    attrs.srcset = imageData.variants.map((v) => `${v.src} ${v.width}w`).join(", ");
+  }
+
+  return el("img", attrs);
+}
+
 function renderHero(hero) {
   return el("section", { className: "hero" }, [
     el("div", { className: "hero__bg" }, [
-      el("img", { src: hero.image, alt: hero.imageAlt, fetchpriority: "high" }),
+      responsiveImg(hero.image, { fetchpriority: "high", decoding: "async" }),
     ]),
     el("div", { className: "hero__overlay" }),
     el("div", { className: "hero__content" }, [
@@ -52,12 +81,12 @@ function renderServiceCard(item) {
 
 function renderServices(services) {
   return el("section", { className: "services" }, [
-    el("div", { className: "section-inner" }, [
+    el("div", { className: "section-inner services__intro" }, [
       el("h2", { className: "services__heading" }, services.heading),
     ]),
     el("div", { className: "services__strip" }, [
       el("div", { className: "services__bg" }, [
-        el("img", { src: services.backgroundImage, alt: services.backgroundAlt }),
+        responsiveImg(services.backgroundImage, { loading: "lazy", decoding: "async" }),
       ]),
       el("div", { className: "services__grid" }, services.items.map(renderServiceCard)),
     ]),
@@ -67,8 +96,9 @@ function renderServices(services) {
 function renderCta(cta) {
   return el("section", { className: "cta" }, [
     el("div", { className: "cta__bg" }, [
-      el("img", { src: cta.backgroundImage, alt: cta.backgroundAlt }),
+      responsiveImg(cta.backgroundImage, { loading: "lazy", decoding: "async" }),
     ]),
+    el("div", { className: "cta__overlay" }),
     el("div", { className: "cta__content" }, [
       el("h2", { className: "cta__heading" }, cta.heading),
       el("a", { className: "btn-primary", href: cta.buttonHref }, cta.buttonLabel),
@@ -77,13 +107,14 @@ function renderCta(cta) {
 }
 
 function renderBio(bio) {
+  const img = responsiveImg(bio.image, { loading: "lazy", decoding: "async", className: "bio__photo" });
   return el("section", { className: "bio" }, [
     el("div", { className: "bio__inner" }, [
-      el("div", { className: "bio__image" }, [
-        el("img", { src: bio.image, alt: bio.imageAlt, loading: "lazy" }),
+      el("div", { className: "bio__image" }, [img]),
+      el("div", { className: "bio__copy" }, [
+        el("h2", { className: "bio__heading" }, bio.heading),
+        el("div", { className: "bio__text" }, bio.paragraphs.map((text) => el("p", {}, text))),
       ]),
-      el("h2", { className: "bio__heading" }, bio.heading),
-      el("div", { className: "bio__text" }, bio.paragraphs.map((text) => el("p", {}, text))),
     ]),
   ]);
 }
@@ -91,11 +122,13 @@ function renderBio(bio) {
 function renderStory(story) {
   return el("section", { className: "story" }, [
     el("div", { className: "story__bg" }, [
-      el("img", { src: story.backgroundImage, alt: story.backgroundAlt }),
+      responsiveImg(story.backgroundImage, { loading: "lazy", decoding: "async" }),
     ]),
-    el("div", { className: "story__box" }, [
-      el("h2", { className: "story__heading" }, story.heading),
-      el("div", { className: "story__text" }, story.paragraphs.map((text) => el("p", {}, text))),
+    el("div", { className: "story__inner" }, [
+      el("div", { className: "story__box" }, [
+        el("h2", { className: "story__heading" }, story.heading),
+        el("div", { className: "story__text" }, story.paragraphs.map((text) => el("p", {}, text))),
+      ]),
     ]),
   ]);
 }
@@ -105,13 +138,13 @@ function renderInfo(location) {
   return el("section", { className: "info-section" }, [
     el("div", { className: "info-grid" }, [
       el("div", { className: "info-block" }, [
-        el("p", { className: "info-block__heading" }, office.heading),
+        el("h3", { className: "info-block__heading" }, office.heading),
         el("p", { className: "info-block__line" }, office.addressLine1),
         el("p", { className: "info-block__line" }, office.addressLine2),
         el("p", { className: "info-block__text" }, office.description),
       ]),
       el("div", { className: "info-block" }, [
-        el("p", { className: "info-block__heading" }, appointments.heading),
+        el("h3", { className: "info-block__heading" }, appointments.heading),
         ...appointments.schedule.map((line) => el("p", { className: "info-block__schedule" }, line)),
         el("p", { className: "info-block__schedule" }, appointments.hours),
         el("p", { className: "info-block__text" }, appointments.note),
@@ -125,7 +158,7 @@ function renderSocial(social) {
     el("h2", { className: "social-section__heading" }, social.heading),
     el("ul", { className: "social-links" }, social.links.map((link) =>
       el("li", {}, el("a", { href: link.href, target: "_blank", rel: "noreferrer noopener", "aria-label": link.label }, [
-        el("img", { src: link.image, alt: link.label, width: "36", height: "36" }),
+        el("img", { src: link.image, alt: link.label, width: "36", height: "36", loading: "lazy" }),
       ]))
     )),
   ]);
@@ -133,7 +166,7 @@ function renderSocial(social) {
 
 function renderNav(navigation) {
   return el("nav", { className: "site-nav", "aria-label": "Site" }, [
-    el("ul", {}, navigation.map((item) =>
+    el("ul", { className: "site-nav__list" }, navigation.map((item) =>
       el("li", {}, el("a", {
         href: item.href,
         className: item.current ? "is-current" : "",
@@ -147,15 +180,54 @@ function renderFooter(footer) {
   return el("footer", { className: "site-footer" }, [
     el("p", {}, footer.addressLine1),
     el("p", {}, footer.addressLine2),
-    el("p", {}, footer.phone),
+    el("p", {}, el("a", { href: `tel:${footer.phone.replace(/\D/g, "")}` }, footer.phone)),
     el("p", {}, el("a", { href: footer.mapHref, target: "_blank", rel: "noreferrer noopener" }, footer.mapLabel)),
     el("p", { className: "site-footer__copyright" }, footer.copyright),
     el("div", { className: "site-footer__social" }, [
-      el("a", { href: footer.social.href, target: "_blank", "aria-label": footer.social.label }, [
-        el("img", { src: footer.social.image, alt: footer.social.label, width: "20", height: "20" }),
+      el("a", { href: footer.social.href, target: "_blank", rel: "noreferrer noopener", "aria-label": footer.social.label }, [
+        el("img", { src: footer.social.image, alt: footer.social.label, width: "20", height: "20", loading: "lazy" }),
       ]),
     ]),
   ]);
+}
+
+function setupMobileNav() {
+  const toggle = document.getElementById("nav-toggle");
+  const nav = document.getElementById("site-nav");
+  const backdrop = document.getElementById("nav-backdrop");
+  if (!toggle || !nav || !backdrop) return;
+
+  const closeNav = () => {
+    document.body.classList.remove("nav-open");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Open menu");
+    backdrop.hidden = true;
+  };
+
+  const openNav = () => {
+    document.body.classList.add("nav-open");
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-label", "Close menu");
+    backdrop.hidden = false;
+  };
+
+  toggle.addEventListener("click", () => {
+    if (document.body.classList.contains("nav-open")) closeNav();
+    else openNav();
+  });
+
+  backdrop.addEventListener("click", closeNav);
+  nav.addEventListener("click", (e) => {
+    if (e.target.closest("a")) closeNav();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeNav();
+  });
+
+  window.matchMedia("(min-width: 901px)").addEventListener("change", (e) => {
+    if (e.matches) closeNav();
+  });
 }
 
 async function init() {
@@ -166,6 +238,12 @@ async function init() {
 
   const meta = document.querySelector('meta[name="description"]');
   if (meta) meta.setAttribute("content", data.meta.description);
+
+  const brand = document.getElementById("site-brand");
+  if (brand && data.meta.brand) {
+    brand.textContent = data.meta.brand;
+    brand.href = data.navigation.find((n) => n.current)?.href || "#";
+  }
 
   const main = document.getElementById("site-main");
   main.replaceChildren(
@@ -183,9 +261,14 @@ async function init() {
 
   const footerEl = document.getElementById("site-footer");
   footerEl.replaceChildren(...renderFooter(data.footer).childNodes);
+
+  setupMobileNav();
 }
 
 init().catch((err) => {
   console.error("Failed to load site content:", err);
-  document.body.insertAdjacentHTML("beforeend", '<p style="padding:2rem;text-align:center;">Unable to load content. Please serve this site from a local web server.</p>');
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    '<p style="padding:2rem;text-align:center;">Unable to load content. Please serve this site from a local web server.</p>'
+  );
 });

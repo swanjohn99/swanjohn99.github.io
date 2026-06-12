@@ -1,7 +1,8 @@
 {
   "meta": {
     "title": "Home | Amy Yang, MD",
-    "description": "Pacific Mind - Office of Amy J Yang MD LLC. A psychiatry practice specializing in high functioning ADHD/neurodivergent individuals and bicultural adults."
+    "description": "Pacific Mind - Office of Amy J Yang MD LLC. A psychiatry practice specializing in high functioning ADHD/neurodivergent individuals and bicultural adults.",
+    "brand": "Pacific Mind"
   },
   "navigation": [
     { "label": "Home", "href": "https://www.yangamymd.com/", "current": true },
@@ -12,16 +13,32 @@
     { "label": "Resources & FAQ", "href": "https://www.yangamymd.com/resources" }
   ],
   "hero": {
-    "image": "images/hero-water.jpg",
-    "imageAlt": "Abstract Water Surface",
+    "image": {
+      "alt": "Abstract Water Surface",
+      "variants": [
+        { "src": "images/hero-water-480w.jpg", "width": 480 },
+        { "src": "images/hero-water-768w.jpg", "width": 768 },
+        { "src": "images/hero-water-1200w.jpg", "width": 1200 },
+        { "src": "images/hero-water-1920w.jpg", "width": 1920 }
+      ],
+      "sizes": "100vw"
+    },
     "title": "Pacific Mind",
     "subtitle": "Office of Amy J Yang MD LLC",
     "tagline": "A psychiatry practice specializing in  high functioning ADHD/neurodivergent individuals and bicultural adults"
   },
   "services": {
     "heading": "Services At a Glance",
-    "backgroundImage": "images/services-paddleboard.jpg",
-    "backgroundAlt": "Paddleboard In Ocean",
+    "backgroundImage": {
+      "alt": "Paddleboard In Ocean",
+      "variants": [
+        { "src": "images/services-paddleboard-480w.jpg", "width": 480 },
+        { "src": "images/services-paddleboard-768w.jpg", "width": 768 },
+        { "src": "images/services-paddleboard-1200w.jpg", "width": 1200 },
+        { "src": "images/services-paddleboard-1920w.jpg", "width": 1920 }
+      ],
+      "sizes": "100vw"
+    },
     "items": [
       {
         "number": "1",
@@ -63,15 +80,31 @@
     ]
   },
   "cta": {
-    "backgroundImage": "images/zen-garden.jpeg",
-    "backgroundAlt": "Zen Garden Sand",
+    "backgroundImage": {
+      "alt": "Zen Garden Sand",
+      "variants": [
+        { "src": "images/zen-garden-480w.jpeg", "width": 480 },
+        { "src": "images/zen-garden-768w.jpeg", "width": 768 },
+        { "src": "images/zen-garden-1200w.jpeg", "width": 1200 },
+        { "src": "images/zen-garden-1920w.jpeg", "width": 1920 }
+      ],
+      "sizes": "100vw"
+    },
     "heading": "Ready to take the next step?",
     "buttonLabel": "Request Consultation",
     "buttonHref": "https://www.yangamymd.com/contact"
   },
   "bio": {
-    "image": "images/succulent-plants.jpg",
-    "imageAlt": "Closeup of Succulent Plants",
+    "image": {
+      "alt": "Closeup of Succulent Plants",
+      "variants": [
+        { "src": "images/succulent-plants-480w.jpg", "width": 480 },
+        { "src": "images/succulent-plants-660w.jpg", "width": 660 },
+        { "src": "images/succulent-plants-960w.jpg", "width": 960 },
+        { "src": "images/succulent-plants-1320w.jpg", "width": 1320 }
+      ],
+      "sizes": "(max-width: 480px) 100vw, (max-width: 900px) 90vw, 660px"
+    },
     "heading": "楊醫師簡介",
     "paragraphs": [
       "經歷： 芝加哥榮民醫院精神科主治醫師\n學歷：芝加哥大學精神科住院醫師\n考試： 美國神經科精神科學院精神科院士",
@@ -84,8 +117,16 @@
     ]
   },
   "story": {
-    "backgroundImage": "images/nature-tokens.jpg",
-    "backgroundAlt": "Nature Tokens",
+    "backgroundImage": {
+      "alt": "Nature Tokens",
+      "variants": [
+        { "src": "images/nature-tokens-480w.jpg", "width": 480 },
+        { "src": "images/nature-tokens-768w.jpg", "width": 768 },
+        { "src": "images/nature-tokens-1200w.jpg", "width": 1200 },
+        { "src": "images/nature-tokens-1920w.jpg", "width": 1920 }
+      ],
+      "sizes": "100vw"
+    },
     "heading": "The Story",
     "paragraphs": [
       "What does finding home in ourselves look like?",

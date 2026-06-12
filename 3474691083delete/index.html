@@ -13,6 +13,22 @@
 </head>
 <body>
   <div class="site-container">
+    <header class="site-header" id="site-header">
+      <a href="#" class="site-header__brand" id="site-brand">Pacific Mind</a>
+      <button
+        type="button"
+        class="nav-toggle"
+        id="nav-toggle"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Open menu"
+      >
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+      </button>
+    </header>
+    <div class="nav-backdrop" id="nav-backdrop" hidden></div>
     <main id="site-main" class="site-main" aria-live="polite"></main>
     <nav id="site-nav" class="site-nav" aria-label="Site"></nav>
     <footer id="site-footer" class="site-footer"></footer>
