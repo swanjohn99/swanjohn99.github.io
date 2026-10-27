@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your ASL feedback</title><style>
+:root{font:16px/1.5 system-ui,sans-serif;color:#24382c;background:#f5f6ee}*{box-sizing:border-box}body{max-width:1150px;margin:auto;padding:30px 25px}header{margin-bottom:24px}h1{font:400 32px Georgia,serif;margin:6px 0}h2{font-size:20px;font-weight:500}p{white-space:pre-wrap}small{color:#607165}video{width:100%;max-height:65vh;background:#0e1711;object-fit:contain;border-radius:12px}button{font:inherit;padding:10px 14px;color:#24382c;background:#e4ebdb;border:1px solid #aabdab;border-radius:8px;cursor:pointer}button:focus-visible{outline:3px solid #805920;outline-offset:3px}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:25px}.items{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.item.active{background:#254b36;color:#fff}.feedback{background:#fff;border:1px solid #d6dfd0;border-radius:12px;padding:22px}.correction{margin:18px 0}.badge{font-size:13px;color:#526d56}.no-feedback{color:#627167}a{color:#254b36}@media(max-width:750px){body{padding:20px 14px}.layout{grid-template-columns:1fr}}@media(prefers-color-scheme:dark){:root{color:#edf1e7;background:#171f1b}small,.badge,.no-feedback{color:#b3c4b6}.feedback{background:#223027;border-color:#455347}button{background:#304739;color:#edf1e7;border-color:#637968}a{color:#bcdac0}}
+
+[hidden]{display:none!important}.player{position:relative;background:#0e1711;border-radius:12px;overflow:hidden;isolation:isolate}.player>video{display:block;max-height:65vh;border-radius:0}.player:fullscreen{width:100vw;height:100vh;display:grid;place-items:center}.player:fullscreen>video{height:100%;max-height:100vh}.teacher-overlay{position:absolute;width:32%;z-index:2;border:1px solid #d5e6ce;overflow:hidden;cursor:move;touch-action:none}.teacher-overlay video{display:block;width:100%;max-height:none;border-radius:0;pointer-events:none}.teacher-overlay:focus-visible{outline:2px solid #805920;outline-offset:-2px}.overlay-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}.overlay-tools button{font-size:13px;padding:5px 9px}.response-title{font-size:13px;margin-right:auto}.response-controls{margin:10px 0}.player-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.player-help{font-size:13px;color:#607165}.teacher-overlay:focus-within{z-index:3}@media(prefers-color-scheme:dark){.player-help{color:#b3c4b6}}
+</style></head><body><header><small>STILL · YOUR ASL FEEDBACK</small><h1 id="student"></h1><div id="assignment"></div></header><main class="layout"><section><h2>Your submission</h2><div id="player" class="player"><video id="original" controls controlslist="nofullscreen" playsinline preload="metadata"></video></div><div class="player-tools"><button id="fullscreen">Full screen</button><button id="reset-overlays">Reset teacher positions</button></div><div id="response-controls" class="response-controls" aria-label="Teacher video controls"></div><p class="player-help">Teacher responses start at the marked time. A newer response takes priority. Drag the teacher video to move it away from the student’s hands. Use the controls below the player to resize or move it. Focus the teacher video and use arrow keys for precise positioning. Teacher audio starts muted.</p><div class="items" id="items" aria-label="Feedback moments"></div><button id="replay">Replay selected section</button></section><section class="feedback" id="feedback" aria-live="polite"></section></main><script id="feedback-data" type="application/json">__FEEDBACK_DATA__</script><script>
+const data = JSON.parse(document.getElementById('feedback-data').textContent);
+const get = id => document.getElementById(id), original = get('original'), player = get('player');
+let selected = null, stopAt = null, waiting = false;
+const overlays = [];
+const time = seconds => String(Math.floor(seconds / 60)).padStart(2,'0') + ':' + String(Math.floor(seconds % 60)).padStart(2,'0');
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+function node(tag, text, className='') {const item=document.createElement(tag);if(text!==undefined)item.textContent=text;item.className=className;return item;}
+get('student').textContent=data.student;get('assignment').textContent=data.assignment;original.src=data.original;
+function showNotes(item,index) {
+  selected=item;get('feedback').replaceChildren();
+  get('feedback').append(node('span',item.purpose+' · '+item.category,'badge'),node('h2',item.label||'A moment to revisit'),node('small',time(item.start)+(item.end>item.start?'–'+time(item.end):'')),node('p',item.note));
+  for(const clip of item.clips.slice(-1)){const section=node('div',undefined,'correction');section.append(node('h3',clip.title));const video=node('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.src=clip.url;video.addEventListener('play',()=>original.pause());section.append(video);get('feedback').append(section);}
+  [...get('items').children].forEach((button,i)=>{button.classList.toggle('active',i===index);button.setAttribute('aria-pressed',String(i===index));});
+}
+function choose(item,index){stopAt=null;original.pause();showNotes(item,index);original.currentTime=item.start;sync(true);}
+window.stepOriginal=delta=>{
+  if(original.readyState<1||!Number.isFinite(original.duration))return;
+  stopAt=null;original.pause();original.currentTime=clamp(original.currentTime+delta,0,original.duration);sync(true);
+};
+document.addEventListener('keydown',event=>{
+  if(event.ctrlKey||event.metaKey||event.altKey||event.target.closest('input,textarea,select,[contenteditable=true],.teacher-overlay')||event.target.closest('video:not(#original)'))return;
+  if(!['ArrowLeft','ArrowRight'].includes(event.key))return;
+  event.preventDefault();
+  window.stepOriginal((event.key==='ArrowLeft'?-1:1)*(event.shiftKey?1:.1));
+},true);
+function positionOverlay(entry,commit=false) {
+  const width=player.clientWidth, height=player.clientHeight;
+  let x=entry.x,y=entry.y;
+  // Wait for both video dimensions so loading placeholders cannot erase a saved position.
+  if(original.readyState>=1&&entry.video.readyState>=1&&width&&height){
+    const videoHeight=(width*entry.size-2)*entry.video.videoHeight/entry.video.videoWidth+2;
+    x=clamp(x,0,Math.max(0,1-entry.size));
+    y=clamp(y,0,Math.max(0,1-videoHeight/height));
+  }
+  // Responsive rendering may clamp the display, but only a teacher action changes the saved layout.
+  if(commit){entry.x=x;entry.y=y;}
+  entry.box.style.left=x*100+'%';entry.box.style.top=y*100+'%';
+}
+function resizeOverlay(entry,delta,commit=true){entry.size=clamp(entry.size+delta,.1,.8);entry.box.style.width=entry.size*100+'%';positionOverlay(entry,commit);}
+window.getTeacherLayouts=()=>overlays.map(entry=>({feedback_id:entry.item.id,clip_id:entry.clip.id,overlay:{x:entry.x,y:entry.y,size:entry.size}}));
+function layoutChanged(){if(window.parent!==window)window.parent.postMessage({type:'teacher-layout-changed'},location.origin);}
+function moveOverlay(entry,x,y){entry.x+=x;entry.y+=y;positionOverlay(entry,true);layoutChanged();}
+function makeOverlay(item,clip,index) {
+  const box=node('div',undefined,'teacher-overlay overlay-handle');box.hidden=true;box.tabIndex=0;box.setAttribute('role','group');box.setAttribute('aria-label',(clip.title||'Teacher response')+' · drag or use arrow keys to move');
+  const handle=box;
+  const video=node('video');video.src=clip.url;video.playsInline=true;video.muted=true;video.preload='auto';
+  const tools=node('div',undefined,'overlay-tools'), label=node('span',clip.title||'Teacher response','response-title'), smaller=node('button','−'), larger=node('button','+'), audio=node('button','Unmute');tools.hidden=true;
+  smaller.setAttribute('aria-label','Shrink teacher response');larger.setAttribute('aria-label','Enlarge teacher response');audio.setAttribute('aria-label','Unmute teacher response');audio.setAttribute('aria-pressed','false');
+  tools.append(label,smaller,larger,audio);box.append(video);player.append(box);get('response-controls').append(tools);
+  const defaults={x:.65-(index%2)*.34,y:.04+(index%3)*.22,size:.32};
+  const entry={item,clip,box,video,tools,label,...defaults,...clip.overlay,pending:false,failed:false};overlays.push(entry);resizeOverlay(entry,0,false);
+  smaller.addEventListener('click',()=>{resizeOverlay(entry,-.05);layoutChanged();});larger.addEventListener('click',()=>{resizeOverlay(entry,.05);layoutChanged();});
+  for(const [name,text,x,y] of [['left','←',-.02,0],['up','↑',0,-.02],['down','↓',0,.02],['right','→',.02,0]]){const control=node('button',text);control.setAttribute('aria-label','Move teacher response '+name);control.addEventListener('click',()=>moveOverlay(entry,x,y));tools.append(control);}
+  audio.addEventListener('click',()=>{video.muted=!video.muted;audio.textContent=video.muted?'Unmute':'Mute';audio.setAttribute('aria-label',audio.textContent+' teacher response');audio.setAttribute('aria-pressed',String(!video.muted));});
+  let drag=null;
+  handle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();drag={x:event.clientX,y:event.clientY,left:entry.x,top:entry.y};handle.setPointerCapture(event.pointerId);handle.focus();});
+  handle.addEventListener('pointermove',event=>{if(!drag)return;entry.x=drag.left+(event.clientX-drag.x)/player.clientWidth;entry.y=drag.top+(event.clientY-drag.y)/player.clientHeight;positionOverlay(entry,true);});
+  const endDrag=()=>{if(!drag)return;drag=null;layoutChanged();};handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);handle.addEventListener('lostpointercapture',endDrag);
+  handle.addEventListener('keydown',event=>{const shifts={ArrowLeft:[-.02,0],ArrowRight:[.02,0],ArrowUp:[0,-.02],ArrowDown:[0,.02]};if(!shifts[event.key])return;event.preventDefault();moveOverlay(entry,...shifts[event.key]);});
+  video.addEventListener('loadedmetadata',()=>sync(true));video.addEventListener('seeked',()=>sync());
+  video.addEventListener('error',()=>{entry.failed=true;label.textContent='Teacher video unavailable';});
+  return entry;
+}
+function responsePlan(item) {
+  const entries=overlays.filter(entry=>entry.item===item);
+  let offset=0;
+  const clips=entries.map(entry=>{
+    const duration=Number.isFinite(entry.video.duration)?entry.video.duration:Number(entry.clip.duration)||0;
+    const part={entry,start:item.start+offset,duration};offset+=duration;return part;
+  });
+  return {clips,end:Math.max(item.end,item.start+offset)};
+}
+function latestResponse(current) {
+  // Once a newer response starts, an interrupted older response never resumes.
+  return data.feedback.reduce((latest,item)=>item.clips.length&&item.start<=current&&(!latest||item.start>=latest.start)?item:latest,null);
+}
+function sync(force=false) {
+  const current=original.currentTime, activeItem=latestResponse(current);
+  const plan=activeItem?responsePlan(activeItem):null;
+  let activePart=null;
+  if(plan&&current<plan.end&&!original.ended) {
+    activePart=plan.clips.find(part=>current>=part.start&&current<part.start+part.duration)||plan.clips.at(-1);
+  }
+  for(const entry of overlays) {
+    const {video,box}=entry;
+    const active=activePart?.entry===entry;
+    box.hidden=!active;
+    entry.tools.hidden=!active;
+    if(!active){video.pause();continue;}
+    positionOverlay(entry);
+    if(!Number.isFinite(video.duration)||video.duration<=0||entry.failed)continue;
+    const elapsed=current-activePart.start, target=clamp(elapsed,0,Math.max(0,video.duration-.001));
+    if(!video.seeking&&(force||Math.abs(video.currentTime-target)>.08))video.currentTime=target;
+    try{video.playbackRate=original.playbackRate;}catch{}
+    const shouldPlay=!original.paused&&!original.seeking&&!waiting&&elapsed<video.duration;
+    if(!shouldPlay)video.pause();
+    else if(video.paused&&!entry.pending){entry.pending=true;video.play().catch(()=>{entry.failed=true;handlePlaybackError(entry);}).finally(()=>{entry.pending=false;});}
+  }
+  if(activePart && activeItem!==selected)showNotes(activeItem,data.feedback.indexOf(activeItem));
+}
+function handlePlaybackError(entry){entry.label.textContent='Teacher playback unavailable · see clip below';}
+
+data.feedback.forEach((item,index)=>{const button=node('button',time(item.start)+' · '+(item.label||item.category),'item');button.addEventListener('click',()=>choose(item,index));get('items').append(button);item.clips.slice(-1).forEach(clip=>makeOverlay(item,clip,overlays.length));});
+get('replay').addEventListener('click',()=>{if(!selected)return;original.currentTime=selected.start;const next=data.feedback.filter(item=>item.clips.length&&item.start>selected.start).map(item=>item.start);stopAt=Math.min(responsePlan(selected).end,...next);original.play().catch(()=>{});});
+for(const event of ['play','pause','seeking','seeked','ratechange','ended','loadedmetadata'])original.addEventListener(event,()=>sync(true));
+original.addEventListener('waiting',()=>{waiting=true;sync();});original.addEventListener('playing',()=>{waiting=false;sync(true);});
+original.addEventListener('timeupdate',()=>{if(stopAt!==null&&original.currentTime>=stopAt){original.pause();original.currentTime=stopAt;stopAt=null;}sync();});
+// Check every display frame so boundaries do not depend on sparse timeupdate events.
+function tick(){sync();requestAnimationFrame(tick);}requestAnimationFrame(tick);
+new ResizeObserver(()=>overlays.forEach(entry=>positionOverlay(entry))).observe(player);
+get('reset-overlays').addEventListener('click',()=>{overlays.forEach((entry,index)=>{const layout=entry.clip.overlay||{x:.65-(index%2)*.34,y:.04+(index%3)*.22,size:.32};Object.assign(entry,layout);resizeOverlay(entry,0,false);});layoutChanged();});
+get('fullscreen').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else player.requestFullscreen?.().catch(()=>{});});
+if(data.feedback.length)choose(data.feedback[0],0);else{get('feedback').append(node('h2','Your review is complete'),node('p','Your instructor has not added any section comments.','no-feedback'));get('replay').disabled=true;}
+</script></body></html>

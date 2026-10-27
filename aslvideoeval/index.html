@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Still · Local review</title>
+  <link rel="stylesheet" href="./hosted.css">
+</head>
+<body>
+  <header>
+    <strong>Still</strong><span>Local review · private library</span>
+    <button id="browse">Browse for video</button><button id="reconnect" hidden>Reconnect folder</button><button id="download-draft" hidden>Download unsaved draft</button>
+    <span id="save-state" role="status">Choose a folder</span>
+  </header>
+  <main>
+    <aside>
+      <nav id="breadcrumbs" aria-label="Video folders"></nav>
+      <div id="branches"></div>
+      <h2>Videos in this folder</h2>
+      <div id="videos"></div>
+      <button id="evaluated">View evaluated videos</button>
+      <button id="back-review" hidden>Back to reviews</button>
+      <hr>
+      <button id="library-setup">Set up library folder</button><button id="library-open">Reusable recordings</button>
+    </aside>
+    <section class="studio">
+      <div class="studio-heading"><h1 id="video-name">Choose a video folder</h1><span id="review-status"></span></div>
+      <div id="screen">
+        <video id="student" playsinline controls preload="metadata"></video>
+        <video id="teacher" playsinline muted hidden></video>
+        <div id="timestamp" hidden></div><div id="caption" hidden></div>
+      </div>
+      <div class="toolbar">
+        <label><input type="checkbox" id="preview"> Student preview</label>
+        <button id="preview-play" hidden>Play preview</button><input id="preview-seek" type="range" min="0" max="1" step="0.01" value="0" hidden aria-label="Preview position">
+        <span id="preview-time"></span>
+        <button id="add-point">Add feedback at current time</button>
+        <button id="add-range">Add feedback range</button>
+        <button id="export">Export final MP4</button>
+        <button id="cancel-export" hidden>Cancel export</button>
+      </div>
+      <div id="export-progress" hidden><progress id="progress" max="1" value="0"></progress><span id="progress-label"></span></div>
+      <div id="feedback-list"></div>
+      <div class="correction-row"><button id="record-correction">Record untimed correction</button><button id="attach-correction">Attach library correction</button><button id="save-correction-library" hidden>Save correction to library</button><span id="correction-label"></span></div>
+      <p class="help">Review files and private recordings stay in this folder. Saving to the reusable library copies the recording into the local shelf; it does not upload.</p>
+    </section>
+  </main>
+  <dialog id="feedback-dialog">
+    <h2>Feedback</h2>
+    <div class="grid"><label>Start (seconds)<input id="start" type="number" min="0" step="0.01"></label><label>End (seconds)<input id="end" type="number" min="0" step="0.01"></label></div>
+    <label>Student caption / written note<textarea id="note" rows="3"></textarea></label>
+    <label>Private note<textarea id="private-note" rows="2"></textarea></label>
+    <p id="attached"></p>
+    <div class="actions"><button id="record-section">Record response</button><button id="attach-section">Attach library clip</button><button id="save-private-library">Save attached private clip to library</button><button id="remove-clip">Remove clip</button><button id="delete-feedback">Delete feedback</button><button id="retry-save">Retry save</button><button id="close-feedback">Done</button></div>
+  </dialog>
+  <dialog id="recorder-dialog">
+    <h2>Record response</h2>
+    <video id="camera" autoplay playsinline muted></video><video id="take" playsinline controls hidden></video>
+    <div id="record-controls"><button id="record-start">Start recording</button><button id="record-stop" hidden>Stop</button><button id="record-retake" hidden>Retake</button></div>
+    <div id="trim-fields" hidden class="grid"><label>Trim start (s)<input id="trim-start" type="number" min="0" step="0.01" value="0"></label><label>Trim end (s)<input id="trim-end" type="number" min="0" step="0.01"></label></div>
+    <div class="actions"><button id="use-recording" hidden>Use this clip locally</button><button id="close-recorder">Cancel</button></div>
+  </dialog>
+  <dialog id="library-dialog">
+    <h2>Reusable recordings</h2>
+    <input id="library-search" type="search" placeholder="Search clips, tags, subtitles">
+    <div class="actions"><label class="file-button">Import a clip into library<input id="library-import" type="file" accept="video/*,.mkv" hidden></label><input id="library-replace" type="file" accept="video/*,.mkv" hidden><button id="close-library">Done</button></div>
+    <div id="library-list"></div>
+  </dialog>
+  <dialog id="library-edit-dialog">
+    <h2>Save reusable clip</h2>
+    <label>Title<input id="library-title" maxlength="200"></label>
+    <label>Subtitle burned into export<textarea id="library-subtitle" rows="2"></textarea></label>
+    <label>Tags (comma separated)<input id="library-tags"></label>
+    <div class="actions"><button id="library-save">Save to library</button><button id="library-edit-cancel">Cancel</button></div>
+  </dialog>
+  <dialog id="library-preview-dialog"><h2 id="library-preview-title">Clip preview</h2><video id="library-preview-video" playsinline controls></video><p id="library-preview-caption"></p><button id="close-library-preview">Done</button></dialog>
+  <div id="toast" role="status" hidden></div>
+  <script type="module" src="./hosted.js"></script>
+</body>
+</html>
