@@ -230,6 +230,9 @@ export class LocalFolders {
     const draft = await setting('draft');
     return draft?.root === this.root?.name && JSON.stringify(draft.path) === JSON.stringify(this.path) ? draft : null;
   }
+  async rememberDraft(document) {
+    await setting('draft', {root: this.root?.name, path: [...this.path], revision: this.revision, document: structuredClone(document)});
+  }
   async acceptDraft(draft) {
     if (draft.revision !== this.revision) throw new Error('The review file changed since this draft. Resolve the conflict before restoring it.');
     this.document = draft.document;

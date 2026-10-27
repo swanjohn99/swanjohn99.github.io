@@ -2,6 +2,12 @@ import {uid, clone, clock, normalize, makeFeedback, feedbackTimestamp, studentPr
 import {GamepadInput} from './gamepad.js';
 import {videoComposition} from './video-composition.js';
 import {renderVideo} from './video-renderer.js';
+import {mode} from './runtime-config.js';
+import {ServerStorage} from './server-storage.js';
+import {BrowserStorage} from './browser-storage.js';
+
+const storage = mode === 'browser' ? new BrowserStorage() : new ServerStorage();
+const browserStorage = storage.mode === 'browser';
 
 const $ = id => document.getElementById(id);
 const video = $('student-video');
@@ -52,6 +58,9 @@ function rememberPosition() {
   viewChanged();
 }
 function restoreWindowView(view = windowSession ? {session: windowSession, positions: localPositions} : storedWindowView()) {
+  if (browserStorage && !storage.folders.root) return;
+  if (browserStorage && view?.session?.source_folder && storage.folders.root &&
+      !view.session.source_folder.startsWith('/video/' + encodeURIComponent(storage.folders.root.name))) return;
   if (view?.session) Object.assign(state.session, view.session);
   localPositions = view?.positions || localPositions;
   for (const item of state.submissions) if (Number.isFinite(localPositions[item.id])) item.position = localPositions[item.id];
@@ -115,10 +124,15 @@ for (const type of ['click', 'input', 'change', 'submit', 'pointerdown']) {
 }
 function activeDuration() {
   if (showingCorrection) {
+    if (browserStorage) return clipAssetDuration(submission()?.correction?.asset_id);
     if (Number.isFinite(correctionVideo.duration) && correctionVideo.duration > 0) return correctionVideo.duration;
     return assets.get(submission()?.correction?.asset_id)?.duration || 0;
   }
   return Number.isFinite(video.duration) ? video.duration : assets.get(submission()?.asset_id)?.duration || 0;
+}
+function clipAssetDuration(id) {
+  const asset = assets.get(id);
+  return Math.max(0, (Number(asset?.trim_end) || Number(asset?.duration) || 0) - (Number(asset?.trim_start) || 0));
 }
 const now = () => Date.now() / 1000;
 const padNames = {confirm: 'Play / select', back: 'Back / cancel', feedback: 'Feedback actions', library: 'Clip shelf', /* markIn: 'Mark start', markOut: 'Mark end', */ rewind: 'Seek backward', forward: 'Seek forward', menu: 'Server status'};
@@ -137,16 +151,9 @@ function notify(message, error = false) {
   $('toast').textContent = message; $('toast').classList.toggle('error', error); $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => {$('toast').hidden = true;}, error ? 9000 : 4000);
 }
-async function api(path, options = {}) {
-  const result = await fetch(path, options);
-  const data = await result.json();
-  if (!result.ok) throw new Error(data.error || 'The operation failed.');
-  return data;
-}
-const post = (path, data) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
 const readWorkspace = () => {
   const folder = state?.session.source_folder ?? storedWindowView()?.session?.source_folder;
-  return api('/api/state' + (folder === undefined ? '' : '?source_folder=' + encodeURIComponent(folder)));
+  return storage.loadWorkspace(folder);
 };
 function remember() {history.push(clone(state)); if (history.length > 30) history.shift();}
 function touch(item = submission()) {
@@ -165,11 +172,17 @@ async function saveNow() {
   if (savedCount === editCount) return;
   keepOneSectionClip(state);
   const count = editCount, snapshot = clone(state);
-  saving = post('/api/state', {state: snapshot, revision, local_view: true}).then(result => {
+  saving = storage.saveWorkspace(snapshot, revision).then(result => {
     revision = result.revision; savedCount = count;
     $('save-state').textContent = savedCount === editCount ? 'Saved locally' : 'Saving…';
     $('save-state').classList.remove('failed');
-  }).catch(error => {$('save-state').textContent = 'Save failed · changes pending'; $('save-state').classList.add('failed'); throw error;}).finally(() => {saving = null;});
+    if (browserStorage) {storage.pendingDraft = null; $('download-draft').hidden = true; $('reconnect-folder').hidden = true;}
+  }).catch(error => {
+    if (browserStorage && error.revision) revision = error.revision;
+    $('save-state').textContent = 'Save failed · changes pending'; $('save-state').classList.add('failed');
+    if (browserStorage) {storage.pendingDraft ||= {document: snapshot}; $('download-draft').hidden = false; $('reconnect-folder').hidden = !/permission|disconnected|not found/i.test(error.message);}
+    throw error;
+  }).finally(() => {saving = null;});
   await saving;
   if (savedCount < editCount) return saveNow();
 }
@@ -180,7 +193,12 @@ async function work(label, operation) {
   document.querySelector('.topbar').inert = true;
   const modal = currentDialog();
   if (modal) {modal.append($('busy')); modal.inert = true;}
-  try {return await operation();} catch (error) {notify(error.message, true);}
+  try {return await operation();}
+  catch (error) {
+    if (error.name === 'AbortError') return;
+    notify(error.message, true);
+    if (browserStorage && /permission|disconnected|not found/i.test(error.message || '')) $('reconnect-folder').hidden = false;
+  }
   finally {busy = false; $('busy').hidden = true; document.body.append($('busy')); if (modal) modal.inert = false; document.querySelector('.workspace').inert = false; document.querySelector('.topbar').inert = false;}
 }
 function openDialog(id, focus = null) {
@@ -322,9 +340,7 @@ function videoListCard(item, index) {
   }
   const thumbnail = element('img');
   thumbnail.alt = '';
-  if (!item.cleaned_at) thumbnail.src = evaluatedFolderSelected()
-    ? `/evaluated-thumbnail?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`
-    : `/media/${item.asset_id}/thumb`;
+  if (!item.cleaned_at) thumbnail.src = evaluatedFolderSelected() ? storage.evaluatedUrl(asset, true) : storage.thumbnailUrl(item.asset_id);
   thumbnail.loading = 'lazy';
   thumbnail.onerror = () => {thumbnail.removeAttribute('src'); thumbnail.style.visibility = 'hidden';};
   const preview = element('span', 'video-list-preview');
@@ -377,17 +393,62 @@ function videoPathParts() {
   const separator = match[1].includes('\\') ? '\\' : '/';
   return {root: match[1], separator, names: match[2].split(/[\\/]/).filter(Boolean)};
 }
+async function renderBrowserVideoPath() {
+  const box = $('video-path');
+  const token = ++pathRenderToken;
+  const path = state?.session.source_folder || '';
+  box.replaceChildren();
+  if (!path) return;
+  const names = path.split('/').filter(Boolean).slice(1).map(decodeURIComponent);
+  const rootPath = '/video/' + encodeURIComponent(names[0]);
+  box.append(button(names[0], () => openPathChoice(rootPath), 'path-open'));
+  let parent = rootPath;
+  for (const name of names.slice(1)) {
+    box.append(element('span', 'path-separator', '/'));
+    const select = element('select', 'path-choice');
+    const currentPath = parent + '/' + encodeURIComponent(name);
+    const choices = await storage.listFolders(parent);
+    if (token !== pathRenderToken) return;
+    for (const child of choices.folders) {
+      if (child.name.toLowerCase() === 'evaluated' && name.toLowerCase() !== 'evaluated') continue;
+      const option = element('option', '', child.name);
+      option.value = child.path;
+      select.append(option);
+    }
+    select.value = currentPath;
+    select.addEventListener('change', () => openPathChoice(select.value));
+    box.append(select);
+    parent = currentPath;
+  }
+  if (evaluatedFolderSelected()) box.append(button('Back to reviews', () => openPathChoice(path.slice(0, path.lastIndexOf('/'))), 'path-open'));
+  else {
+    const children = await storage.listFolders(path);
+    if (token !== pathRenderToken) return;
+    const reviewFolders = children.folders.filter(child => child.name.toLowerCase() !== 'evaluated');
+    if (reviewFolders.length) {
+      const select = element('select', 'path-choice');
+      const placeholder = element('option', '', 'Open subfolder…'); placeholder.value = ''; select.append(placeholder);
+      for (const child of reviewFolders) {const option = element('option', '', child.name); option.value = child.path; select.append(option);}
+      select.setAttribute('aria-label', 'Open subfolder');
+      select.addEventListener('change', () => {if (select.value) openPathChoice(select.value);});
+      box.append(select);
+    }
+    if (children.folders.some(child => child.name.toLowerCase() === 'evaluated'))
+      box.append(button('View evaluated videos', () => openPathChoice(path + '/evaluated'), 'path-open'));
+  }
+}
 async function folderChildren(path) {
-  if (!folderChoices.has(path)) folderChoices.set(path, post('/api/folders', {path}).catch(error => {folderChoices.delete(path); throw error;}));
+  if (!folderChoices.has(path)) folderChoices.set(path, storage.listFolders(path).catch(error => {folderChoices.delete(path); throw error;}));
   return (await folderChoices.get(path)).folders;
 }
 async function renderVideoPath() {
+  if (browserStorage) {renderBrowserVideoPath().catch(error => notify(error.message, true)); return;}
   const box = $('video-path');
   const token = ++pathRenderToken;
   const path = videoPathParts();
   if (!path) {
     box.textContent = pathUnderVideo(assets.get(submission()?.asset_id)?.source_path || '') || state?.session.source_folder || '';
-    if (state?.session.source_folder) box.append(openFolderButton());
+    if (state?.session.source_folder && !browserStorage) box.append(openFolderButton());
     return;
   }
   box.replaceChildren();
@@ -417,11 +478,11 @@ async function renderVideoPath() {
     }).catch(error => console.error('Could not list sibling folders:', error));
     parent = current.value;
   }
-  box.append(openFolderButton());
+  if (!browserStorage) box.append(openFolderButton());
 }
 function openFolderButton() {
   const control = button('Open folder', async () => {
-    try {await post('/api/open-source-folder', {path: state.session.source_folder});}
+    try {await storage.openNativeFolder(state.session.source_folder);}
     catch (error) {notify(error.message, true);}
   }, 'path-open');
   control.title = 'Open this folder in Finder or File Explorer';
@@ -429,18 +490,25 @@ function openFolderButton() {
   return control;
 }
 async function openPathChoice(chosen) {
-  if (isEvaluatedFolder(chosen)) return;
+  if (isEvaluatedFolder(chosen) && !browserStorage) return;
   await work('Opening folder…', async () => {
     await saveNow();
+    if (browserStorage) {
+      renderTask?.controller.abort();
+      const data = await storage.openFolder(chosen);
+      rememberPosition();
+      acceptFolderWorkspace(data);
+      return;
+    }
     let path = chosen;
     const visited = new Set();
     while (chosen !== state.session.source_folder && !visited.has(path)) {
       visited.add(path);
-      const listing = await post('/api/folders', {path});
+      const listing = await storage.listFolders(path);
       if (!listing.folders.length || listing.folders[0].name.toLowerCase() === 'evaluated') break;
       path = listing.folders[0].path;
     }
-    const data = await post('/api/folder-view', {path, assignment_id: currentAssignment()?.id, revision: evaluatedFolderSelected() ? null : revision});
+    const data = await storage.openFolder(path, currentAssignment()?.id, evaluatedFolderSelected() ? null : revision);
     rememberPosition();
     acceptFolderWorkspace(data);
   });
@@ -473,7 +541,7 @@ function renderPlayer() {
     hideCorrection(); video.pause(); markedIn = markedOut = null; looping = false;
     selectedAsset = item?.asset_id || null;
     if (selectedAsset && !item.cleaned_at) {
-      video.src = asset?.evaluated_version ? `/evaluated-media?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}` : `/media/${selectedAsset}`;
+      video.src = asset?.evaluated_version ? storage.evaluatedUrl(asset) : storage.mediaUrl(selectedAsset);
       video.load();
     } else {video.removeAttribute('src'); video.load(); $('video-shell').style.removeProperty('--ar');}
   }
@@ -483,6 +551,11 @@ function renderPlayer() {
   syncCorrectionControl();
 }
 function syncTracking() {
+  if (browserStorage) {
+    for (const id of ['track-motion', 'view-tracking', 'view-points']) $(id).disabled = true;
+    $('track-motion').title = 'Tracking requires the local Python server.';
+    return;
+  }
   const assetId = submission()?.cleaned_at || evaluatedFolderSelected() ? null : submission()?.asset_id || null;
   if (assetId === trackingAsset) return;
   trackingAsset = assetId;
@@ -499,7 +572,7 @@ async function refreshTracking() {
     return;
   }
   try {
-    const data = await api('/api/tracking/' + assetId);
+    const data = await storage.trackingStatus(assetId);
     if (assetId !== trackingAsset) return;
     trackingStatus = data;
     logTracking(assetId, data);
@@ -552,7 +625,7 @@ async function startTracking() {
   $('track-motion').disabled = true; $('track-motion').textContent = 'Starting tracking…';
   console.log('Tracking ' + assetId.slice(0, 8) + ': requested');
   try {
-    await post('/api/tracking', {asset_id: assetId});
+    await storage.startTracking(assetId);
     trackingWait.add(assetId); trackingError = '';
     notify('Tracking started. You can keep reviewing.');
     refreshTracking();
@@ -580,7 +653,7 @@ function viewTracking(points) {
     ? 'Fingertips and mouth on an empty background. Amber dots are fingertips. Pink dots are the mouth.'
     : 'Amber dots are fingertips. Pink dots are the mouth. This is a guide for review, not a score.';
   player.setAttribute('aria-label', points ? 'Finger and mouth points' : 'Finger and mouth tracking video');
-  player.src = `/media/${assetId}/${points ? 'tracking-points' : 'tracking'}?t=${Date.now()}`;
+  player.src = storage.trackingUrl(assetId, points);
   openDialog('tracking-dialog');
   player.play().catch(() => {});
 }
@@ -633,12 +706,12 @@ function render() {syncEvaluatedControls(); if (keepOneSectionClip(state)) dirty
 function showFeedback() {$('feedback-panel').hidden = false; document.querySelector('.workspace').classList.add('with-feedback'); renderEditor(); requestAnimationFrame(fitSofa);}
 function hideFeedback() {$('feedback-panel').hidden = true; document.querySelector('.workspace').classList.remove('with-feedback'); requestAnimationFrame(fitSofa);}
 function studentPosition() {return Math.max(0, video.readyState >= 1 ? video.currentTime : submission()?.position || 0);}
-function position() {return showingCorrection ? Math.max(0, correctionVideo.currentTime || 0) : studentPosition();}
+function position() {return showingCorrection ? Math.max(0, (correctionVideo.currentTime || 0) - (browserStorage ? Number(assets.get(submission()?.correction?.asset_id)?.trim_start) || 0 : 0)) : studentPosition();}
 function seek(seconds, feedbackId) {
   if (submission()?.cleaned_at) return;
   const duration = activeDuration();
   const target = Math.max(0, Math.min(duration, seconds));
-  if (showingCorrection) {correctionVideo.currentTime = target; updateTransport(); return;}
+  if (showingCorrection) {correctionVideo.currentTime = target + (browserStorage ? Number(assets.get(submission()?.correction?.asset_id)?.trim_start) || 0 : 0); updateTransport(); return;}
   if (studentPreviewOn() && previewPlayback) {
     const timeline = previewTimeline();
     if (timeline) {setPreviewTime(feedbackId ? previewOutputTime(timeline, target, previewPlayback.time, feedbackId) : previewPlayback.time + seconds - studentPosition(), timeline); return;}
@@ -758,10 +831,10 @@ function acceptFolderWorkspace(data) {
 async function browseForVideo() {
   await work('Choose a video folder…', async () => {
     await saveNow();
-    const data = await post('/api/pick-source-folder', {
-      assignment_id: state.session.assignment_id, revision: evaluatedFolderSelected() ? null : revision, local_view: true,
-      initial: folderPaths.source || state.session.source_folder || '',
-    });
+    if (browserStorage) renderTask?.controller.abort();
+    const data = await storage.chooseFolder({assignmentId: state.session.assignment_id,
+      revision: evaluatedFolderSelected() ? null : revision, localView: true,
+      initial: folderPaths.source || state.session.source_folder || ''});
     if (data.cancelled) return;
     acceptFolderWorkspace(data);
     if (!submission() || submission().assignment_id !== state.session.assignment_id) {
@@ -774,8 +847,8 @@ async function browseForVideo() {
   });
 }
 async function upload(file, kind) {
-  const result = await api('/api/assets', {method: 'POST', headers: {'X-Filename': encodeURIComponent(file.name || `correction.${file.type.includes('mp4') ? 'mp4' : 'webm'}`), 'X-Kind': kind, 'X-Source-Folder': encodeURIComponent(state.session.source_folder || '')}, body: file});
-  assets.set(result.asset.id, result.asset); if (result.asset.warning) notify(result.asset.warning, true); return result.asset;
+  const asset = await storage.saveAsset(file, kind, state.session.source_folder || '');
+  assets.set(asset.id, asset); if (asset.warning) notify(asset.warning, true); return asset;
 }
 async function importSubmissions(files) {
   await work('Importing your videos…', async () => {
@@ -807,6 +880,7 @@ function applyLibraryTarget() {
   $('library-help').textContent = correction
     ? 'Choose a saved clip. It plays beside Record a correction, and its subtitle fills the correction feedback.'
     : 'Teacher responses are kept separately from student submissions. Preview a response, then attach it to this section.';
+  if (browserStorage) $('library-help').textContent += ' Cleanup and physical deletion require the local Python server; archive a clip to hide it.';
   $('clip-attach').textContent = correction ? libraryUseLabel() : (willReplaceSectionClip() ? "Replace this section's clip" : 'Attach to this section');
   $('library-save-add').textContent = correction ? 'Save and use this clip' : (willReplaceSectionClip() ? "Save and replace this section's clip" : 'Save and add to this section');
 }
@@ -820,7 +894,7 @@ function renderLibrary() {
   for (const entry of entries) {
     const card = element('article', 'library-card');
     if (libraryView !== 'list') {
-      const image = element('img'); image.src = `/media/${entry.asset_id}/thumb`; image.alt = ''; image.loading = 'lazy'; image.onerror = () => {image.style.visibility = 'hidden';};
+      const image = element('img'); image.src = storage.thumbnailUrl(entry.asset_id); image.alt = ''; image.loading = 'lazy'; image.onerror = () => {image.style.visibility = 'hidden';};
       card.append(image);
     }
     const content = element('div', 'library-card-content');
@@ -831,7 +905,9 @@ function renderLibrary() {
     if (submission() && !submission().cleaned_at && !entry.inbox && !entry.archived) actions.append(button(libraryTarget === 'correction' ? libraryUseLabel() : (willReplaceSectionClip() ? "Replace this section's clip" : 'Add to this section'), () => {
       if (attachLibraryEntry(entry.asset_id, entry.title, entry.id)) closeDialog($('library-dialog'));
     }, 'small primary'));
-    actions.append(button('Delete', () => deleteLibraryClip(entry.id), 'small danger'));
+    const remove = button('Delete', () => deleteLibraryClip(entry.id), 'small danger');
+    if (browserStorage) {remove.disabled = true; remove.title = 'Physical deletion requires the local Python server. Archive this clip to hide it.';}
+    actions.append(remove);
     content.append(actions); card.append(content); list.append(card);
   }
   if (!entries.length) {
@@ -847,7 +923,8 @@ function librarySubtitle(libraryId) {
 function previewAsset(assetId, title, description = '', tags = []) {
   const entry = state.library.find(item => item.asset_id === assetId);
   previewEntry = entry?.id || null;
-  $('clip-title').textContent = title || 'Signed feedback'; $('clip-video').src = `/media/${assetId}`; $('clip-video').dataset.asset = assetId;
+  $('clip-title').textContent = title || 'Signed feedback'; $('clip-video').src = storage.mediaUrl(assetId); $('clip-video').dataset.asset = assetId;
+  if (browserStorage) $('clip-video').addEventListener('loadedmetadata', () => {$('clip-video').currentTime = Number(assets.get(assetId)?.trim_start) || 0;}, {once: true});
   const caption = (description || entry?.description || '').trim();
   $('clip-description').textContent = caption; $('clip-description').hidden = !caption;
   $('clip-tags').replaceChildren(); tags.forEach(tag => $('clip-tags').append(element('span', 'tag', tag)));
@@ -899,11 +976,12 @@ function editLibrary(id = null, assetId = null, clipId = null) {
   $('library-title').value = entry?.title || ''; $('library-tags').value = '';
   $('library-description').value = entry?.description || ''; $('library-aliases').value = entry?.aliases?.join(', ') || '';
   $('library-favorite').checked = !!entry?.favorite; renderTagChoices(entry);
-  $('replace-library-video').hidden = !entry; $('archive-library').hidden = !entry; $('delete-library').hidden = !entry; $('archive-library').textContent = entry?.archived ? 'Restore clip' : 'Archive clip';
+  $('replace-library-video').hidden = !entry; $('archive-library').hidden = !entry; $('delete-library').hidden = !entry || browserStorage; $('archive-library').textContent = entry?.archived ? 'Restore clip' : 'Archive clip';
   $('library-save-add').hidden = !!entry || !assetId || !submission() || !!clipId;
   openDialog('library-edit-dialog', 'library-title');
 }
 function onThisComputer() {
+  if (browserStorage) return false;
   const host = location.hostname;
   return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
 }
@@ -933,6 +1011,7 @@ function deletedClipUseCount(entry) {
   return count;
 }
 async function deleteLibraryClip(id) {
+  if (browserStorage) return notify('Physical library deletion requires the local Python app. Archive the clip to hide it.', true);
   const entry = state.library.find(item => item.id === id);
   if (!entry) return;
   const count = deletedClipUseCount(entry);
@@ -942,7 +1021,7 @@ async function deleteLibraryClip(id) {
   if (!confirm(message)) return;
   await work('Moving the clip to deleted files…', async () => {
     await saveNow();
-    const data = await post('/api/delete-library-clip', {id, revision});
+    const data = await storage.deleteLibraryClip(id, revision);
     if ($('library-edit-dialog').open) closeDialog($('library-edit-dialog'));
     if ($('clip-dialog').open) closeDialog($('clip-dialog'));
     applyWorkspace(data);
@@ -951,9 +1030,10 @@ async function deleteLibraryClip(id) {
   });
 }
 async function openCleanup() {
+  if (browserStorage) return notify('Cleanup requires the local Python app.', true);
   const ready = await work('Checking evaluated reviews…', async () => {
     await saveNow();
-    const data = await api('/api/cleanup');
+    const data = await storage.cleanupStatus();
     if (data.revision !== revision) throw new Error('The workspace changed in another window. Reload before cleanup.');
     const list = $('cleanup-reviews'); list.replaceChildren();
     for (const review of data.reviews) {
@@ -969,11 +1049,12 @@ async function openCleanup() {
   if (ready) openDialog('cleanup-dialog');
 }
 async function cleanSelectedReviews() {
+  if (browserStorage) return notify('Cleanup requires the local Python app.', true);
   const ids = [...$('cleanup-reviews').querySelectorAll('input:checked')].map(input => input.value);
   if (!ids.length) return;
   await work('Cleaning up working media…', async () => {
     await saveNow();
-    const data = await post('/api/cleanup', {submission_ids: ids, revision});
+    const data = await storage.cleanupReviews(ids, revision);
     closeDialog($('cleanup-dialog'));
     selectedAsset = null; trackingAsset = null; destroyPreview();
     applyWorkspace(data);
@@ -982,9 +1063,10 @@ async function cleanSelectedReviews() {
   });
 }
 async function pickReference() {
+  if (browserStorage) return notify('Choose a clip file in the browser.', true);
   const replacing = referenceReplace;
   await work(replacing ? 'Choose a new clip version…' : 'Choose a clip…', async () => {
-    const data = await post('/api/pick-reference', {});
+    const data = await storage.pickReference();
     if (data.cancelled) {referenceReplace = null; return;}
     const asset = data.asset;
     assets.set(asset.id, asset);
@@ -1037,7 +1119,7 @@ function syncCorrectionSubtitle() {
 async function prepareCamera() {
   stopCamera(); $('record-start').disabled = true; rec.phase = 'camera'; setRecorderView();
   try {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access requires this app to be opened at localhost in a supported browser.');
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access requires HTTPS or localhost in a supported browser.');
     rec.stream = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 1280}, height: {ideal: 720}}, audio: $('microphone').checked});
     if (!$('recorder-dialog').open) {stopCamera(); return;}
     $('camera-video').srcObject = rec.stream; $('record-start').disabled = false; $('record-start').focus();
@@ -1138,7 +1220,7 @@ async function useRecording() {
     const start = Number($('trim-start').value), end = Math.min(Number($('trim-end').value), rec.asset.duration || rec.elapsed);
     result = rec.asset;
     if (start > .04 || end < (rec.asset.duration || rec.elapsed) - .15) {
-      const response = await post('/api/trim', {asset_id: rec.asset.id, start, end}); result = response.asset; assets.set(result.id, result);
+      result = await storage.trimAsset(rec.asset.id, start, end); assets.set(result.id, result);
     }
     if (recorderMode === 'submission') {
       if (!submission()) return;
@@ -1212,13 +1294,13 @@ function playCorrection() {
   video.pause();
   if (correctionVideo.dataset.asset !== correction.asset_id) {
     correctionVideo.dataset.asset = correction.asset_id;
-    correctionVideo.src = `/media/${correction.asset_id}`;
+    correctionVideo.src = storage.mediaUrl(correction.asset_id);
   }
   destroyPreview();
   showingCorrection = true;
   videoShell().classList.add('showing-correction');
   correctionVideo.hidden = false;
-  correctionVideo.currentTime = 0;
+  correctionVideo.currentTime = browserStorage ? Number(assets.get(correction.asset_id)?.trim_start) || 0 : 0;
   syncCorrectionSubtitle();
   syncCorrectionControl();
   updateTransport();
@@ -1287,7 +1369,7 @@ async function refreshSourceFolder() {
   const startingRevision = revision;
   try {
     sourceLoading = true;
-    const data = await post('/api/folder-view', {path, assignment_id: assignmentId, revision: startingRevision});
+    const data = await storage.openFolder(path, assignmentId, startingRevision);
     if (busy || path !== state.session.source_folder || assignmentId !== state.session.assignment_id || startingEditCount !== editCount) return;
     revision = data.revision;
     const known = new Set(state.submissions.map(item => item.id));
@@ -1295,8 +1377,10 @@ async function refreshSourceFolder() {
     const missing = data.not_submitted || [];
     const availabilityChanged = data.assets.some(asset => !!asset.source_missing !== !!assets.get(asset.id)?.source_missing);
     const exportsChanged = applyExportIndicators(data);
-    if (!added.length && !availabilityChanged && !exportsChanged && JSON.stringify(missing) === JSON.stringify(notSubmitted)) return;
+    const libraryChanged = browserStorage && JSON.stringify(data.state.library) !== JSON.stringify(state.library);
+    if (!added.length && !availabilityChanged && !exportsChanged && !libraryChanged && JSON.stringify(missing) === JSON.stringify(notSubmitted)) return;
     state.submissions.push(...added);
+    if (libraryChanged) state.library = data.state.library;
     assets = new Map(data.assets.map(asset => [asset.id, asset]));
     notSubmitted = missing;
     render();
@@ -1324,7 +1408,7 @@ async function refreshEvaluatedFolder() {
   try {
     if (document.hidden || busy) return;
     evaluatedLoading = true;
-    const data = await post('/api/folder-view', {path});
+    const data = await storage.openFolder(path);
     if (busy || state.session.source_folder !== path) return;
     const oldVersions = JSON.stringify([...assets.values()].map(asset => [asset.id, asset.evaluated_version]));
     const newVersions = JSON.stringify(data.assets.map(asset => [asset.id, asset.evaluated_version]));
@@ -1348,19 +1432,24 @@ async function exportFeedback() {
   try {
     await saveNow();
     const snapshotRevision = revision;
-    const composition = currentComposition(item);
+    const snapshotEdits = editCount;
+    const composition = await currentComposition(item);
     notify('Export started. Rendering video in this browser.');
     const result = await renderExportVideo(composition);
-    const data = await api('/api/export/rendered?submission_id=' + encodeURIComponent(item.id) + '&source_folder=' + encodeURIComponent(folder), {
-      method: 'POST', headers: {'Content-Type': 'video/mp4', 'X-Revision': String(snapshotRevision)}, body: result.blob,
-    });
+    if (browserStorage && (revision !== snapshotRevision || editCount !== snapshotEdits)) throw new Error('The review changed during rendering. Export again.');
+    const data = await storage.saveExport({submissionId: item.id, sourceFolder: folder, revision: snapshotRevision}, result.blob);
     await applyFinishedExport(item.id, data);
     const drafts = item.feedback.filter(row => !row.note.trim() && !row.clips.length).length;
     notify(`${data.filename} exported. Saved in ${data.saved_directory}.${drafts ? ' Empty drafts remain saved for later.' : ''}`);
   } catch (error) {if (error.name !== 'AbortError') notify(error.message, true);}
   finally {exportJobs.delete(item.id); labelExportButtons();}
 }
-function currentComposition(item = submission()) {return videoComposition(item, assets, state.library);}
+async function currentComposition(item = submission()) {
+  if (!browserStorage) return videoComposition(item, assets, state.library);
+  const ids = new Set([item.asset_id, ...(item.feedback || []).flatMap(row => (row.clips || []).map(clip => clip.asset_id)), item.correction?.asset_id].filter(Boolean));
+  const media = await storage.resolveExportMedia(ids);
+  return videoComposition(item, assets, state.library, id => media.get(id));
+}
 async function renderExportVideo(composition) {
   if (renderTask) throw new Error('Wait for the current export to finish rendering, or cancel it first.');
   const task = {controller: new AbortController()};
@@ -1467,6 +1556,7 @@ function rebindPreview() {
   return true;
 }
 function clipDuration(entry) {
+  if (browserStorage) return clipAssetDuration(entry.clip.asset_id);
   if (Number.isFinite(entry.video.duration) && entry.video.duration > 0) return entry.video.duration;
   return assets.get(entry.clip.asset_id)?.duration || 0;
 }
@@ -1512,7 +1602,7 @@ function makeTeacherOverlay(item, clip, index) {
   box.hidden = true; box.tabIndex = 0; box.setAttribute('role', 'group');
   box.setAttribute('aria-label', (clip.title || 'Teacher response') + ' - drag or use arrow keys to move');
   const player = element('video');
-  player.src = `/media/${clip.asset_id}`; player.playsInline = true; player.muted = true; player.preload = 'auto';
+  player.src = storage.mediaUrl(clip.asset_id); player.playsInline = true; player.muted = true; player.preload = 'auto';
   box.append(player); $('video-shell').append(box);
   const tools = element('div', 'overlay-tools'), label = element('span', 'response-title', clip.title || 'Teacher response');
   const smaller = element('button', 'small', '-'), larger = element('button', 'small', '+'), audio = element('button', 'small', 'Unmute');
@@ -1571,7 +1661,7 @@ function rebuildPreview() {
   const correction = submission().correction;
   if (correction?.asset_id) {
     const box = element('div', 'preview-tail'), player = element('video');
-    box.hidden = true; player.src = `/media/${correction.asset_id}`;
+    box.hidden = true; player.src = storage.mediaUrl(correction.asset_id);
     player.playsInline = true; player.muted = true; player.preload = 'auto';
     box.append(player); $('video-shell').append(box);
     previewTail = {box, video: player, clip: correction, tools: element('div'), label: element('span')};
@@ -1597,10 +1687,12 @@ function syncPlayback(force = false) {
     if (!active) {entry.video.pause(); continue;}
     positionOverlay(entry);
     if (!Number.isFinite(entry.video.duration) || entry.video.duration <= 0 || entry.failed) continue;
-    const elapsed = current - activeItem.start, target = clamp(elapsed, 0, Math.max(0, entry.video.duration - .001));
+    const elapsed = current - activeItem.start;
+    const trimStart = browserStorage ? Number(assets.get(entry.clip.asset_id)?.trim_start) || 0 : 0;
+    const target = trimStart + clamp(elapsed, 0, Math.max(0, clipDuration(entry) - .001));
     if (!entry.video.seeking && (force || Math.abs(entry.video.currentTime - target) > .08)) entry.video.currentTime = target;
     try {entry.video.playbackRate = video.playbackRate;} catch {}
-    const shouldPlay = (previewPlayback?.playing ?? !video.paused) && !previewWaiting && elapsed < entry.video.duration;
+    const shouldPlay = (previewPlayback?.playing ?? !video.paused) && !previewWaiting && elapsed < clipDuration(entry);
     if (!shouldPlay) entry.video.pause();
     else if (entry.video.paused && !entry.pending) {
       entry.pending = true;
@@ -1694,25 +1786,60 @@ function navigateController({vertical, horizontal}) {
 }
 function bindClick(id, callback) {$(id).addEventListener('click', callback);}
 async function openServer() {
+  if (browserStorage) {
+    const status = await storage.status();
+    $('server-heading').textContent = 'Storage';
+    $('server-address').textContent = status.folder ? `Video folder: ${status.folder} (${status.folderAccess}) · Reusable library: ${status.library || 'not selected'} (${status.libraryAccess})` : 'Choose a video folder to begin.';
+    $('server-status').textContent = status.ok ? 'Folder access is available.' : 'Folder access needs to be connected.';
+    $('storage-reconnect').hidden = false;
+    $('storage-library').hidden = false;
+    $('browser-limits').hidden = false;
+    openDialog('server-dialog');
+    return;
+  }
   $('server-address').textContent = location.origin;
   $('server-status').textContent = 'Checking connection…';
   openDialog('server-dialog');
   try {
-    const health = await api('/api/health', {cache: 'no-store', signal: AbortSignal.timeout(5000)});
+    const health = await storage.status();
     $('server-status').textContent = health.ok ? 'Server is running.' : 'Server is unavailable.';
   } catch {
     $('server-status').textContent = 'Could not connect to the server.';
   }
 }
 
+async function setupBrowserLibrary() {
+  if (!browserStorage) return;
+  try {
+    await saveNow();
+    renderTask?.controller.abort();
+    const data = await storage.chooseLibrary();
+    applyWorkspace(data);
+    notify('Reusable library folder connected.');
+  } catch (error) {if (error.name !== 'AbortError') notify(error.message, true);}
+}
+
 async function boot() {
   try {
+    if (browserStorage) {
+      $('server').textContent = 'Storage';
+      $('library-setup').hidden = false;
+      $('library-cleanup').disabled = true;
+      $('library-cleanup').title = 'Cleanup requires the local Python server.';
+      $('delete-library').disabled = true;
+      $('delete-library').title = 'Physical library deletion requires the local Python server.';
+      $('library-help').textContent = 'Reviews and recordings stay on this computer. Cleanup and physical deletion require the local Python server.';
+    }
     let data = await readWorkspace(); state = data.state; revision = data.revision; capabilities = data.capabilities;
+    if (browserStorage) {
+      $('reconnect-folder').hidden = !(storage.folders.root && !storage.folders.folder);
+      $('download-draft').hidden = !storage.pendingDraft;
+    }
     restoreWindowView();
     assets = new Map(data.assets.map(asset => [asset.id, asset]));
     if (state.session.source_folder) {
       try {
-        data = await post('/api/folder-view', {path: state.session.source_folder, assignment_id: state.session.assignment_id, revision});
+        data = await storage.openFolder(state.session.source_folder, state.session.assignment_id, revision);
         state = data.state; revision = data.revision;
         assets = new Map(data.assets.map(asset => [asset.id, asset])); restoreWindowView();
       } catch (error) {console.error('Could not refresh folder on reload:', error);}
@@ -1731,7 +1858,7 @@ async function boot() {
       $('pad-detail').textContent = pad ? `${pad.id} · ${pad.mapping || 'Device-specific mapping'} · last input shown below` : 'Connect your controller, then press a button with this app focused.';
       if (disconnected) {pausePreview(); correctionVideo.pause(); notify('Controller disconnected. Your place is saved; keyboard controls remain available.', true);} updateHint();
     }});
-  } catch (error) {$('save-state').textContent = 'Connection failed'; notify(error.message + ' Start app.py and reload this page.', true);}
+  } catch (error) {$('save-state').textContent = 'Connection failed'; notify(error.message + (browserStorage ? ' Reconnect the folder and retry.' : ' Start app.py and reload this page.'), true); if (browserStorage) $('reconnect-folder').hidden = false;}
 }
 
 dialogs.forEach(dialog => {dialog.querySelectorAll('[data-close]').forEach(node => node.addEventListener('click', () => closeDialog(dialog))); dialog.addEventListener('close', updateHint); dialog.addEventListener('cancel', event => {if (busy) {event.preventDefault(); return;} if (dialog === $('recorder-dialog')) {event.preventDefault(); cancelRecorder();}});});
@@ -1765,11 +1892,21 @@ video.addEventListener('error', async () => {
   const reason = `Browser playback error ${video.error.code}: ${video.error.message || 'Video could not play.'}`;
   const message = `Failed to load ${asset.name}. Its original is preserved.`;
   notify(message, true);
-  if (evaluatedFolderSelected()) return;
+  if (evaluatedFolderSelected() || browserStorage) return;
   try {
-    const result = await post('/api/playback-error', {asset_id: assetId, reason});
+    const result = await storage.reportPlaybackError(assetId, reason);
     if (result.log_error) notify(`${message} ${result.log_error}`, true);
   } catch (error) {notify(`${message} Could not save the error log: ${error.message}`, true);}
+});
+correctionVideo.addEventListener('timeupdate', () => {
+  if (!browserStorage || !showingCorrection) return;
+  const end = Number(assets.get(submission()?.correction?.asset_id)?.trim_end);
+  if (end && correctionVideo.currentTime >= end) correctionVideo.pause();
+});
+$('clip-video').addEventListener('timeupdate', () => {
+  if (!browserStorage) return;
+  const end = Number(assets.get($('clip-video').dataset.asset)?.trim_end);
+  if (end && $('clip-video').currentTime >= end) $('clip-video').pause();
 });
 bindClick('loop', () => {if (!feedback() || feedback().end <= feedback().start) return notify('Select a marked range before looping.'); looping = !looping; if (looping) seek(feedback().start); updateTransport();});
 bindClick('fullscreen', () => {if (document.fullscreenElement) document.exitFullscreen(); else $('video-shell').requestFullscreen().catch(error => notify(error.message, true));});
@@ -1790,7 +1927,7 @@ $('speed').addEventListener('change', event => {
 // bindClick('mark-in', () => mark('in')); bindClick('mark-out', () => mark('out'));
 bindClick('add-feedback', addFeedback);
 bindClick('previous-student', () => nextStudent(-1)); bindClick('next-student', () => nextStudent(1));
-bindClick('empty-import', () => $('video-import').click());
+bindClick('empty-import', () => browserStorage ? browseForVideo() : $('video-import').click());
 bindClick('video-folders', browseForVideo);
 $('video-import').addEventListener('change', event => {if (event.target.files.length) importSubmissions(event.target.files); event.target.value = '';});
 bindClick('close-feedback', hideFeedback);
@@ -1816,6 +1953,20 @@ document.querySelectorAll('[data-library-view]').forEach(node => node.addEventLi
   renderLibrary();
 }));
 bindClick('library-cleanup', openCleanup);
+bindClick('library-setup', setupBrowserLibrary);
+bindClick('reconnect-folder', async () => {
+  try {const data = await storage.reconnect(); applyWorkspace(data); $('reconnect-folder').hidden = true;}
+  catch (error) {notify(error.message, true);}
+});
+bindClick('storage-reconnect', async () => {closeDialog($('server-dialog')); $('reconnect-folder').click();});
+bindClick('storage-library', async () => {closeDialog($('server-dialog')); await setupBrowserLibrary();});
+bindClick('download-draft', () => {
+  const draft = storage.pendingDraft;
+  if (!draft) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(draft.document, null, 2)], {type: 'application/json'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'still-unsaved-draft.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+});
 bindClick('cleanup-confirm', cleanSelectedReviews);
 bindClick('library-import', () => beginReferenceImport());
 $('reference-import').addEventListener('change', event => {if (event.target.files[0]) importReference(event.target.files[0]); event.target.value = '';});

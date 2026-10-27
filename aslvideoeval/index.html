@@ -1,80 +1,70 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Still · Local review</title>
-  <link rel="stylesheet" href="./hosted.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Still — ASL review studio</title>
+  <meta name="description" content="A calm, local workspace for reviewing ASL videos and recording signed feedback.">
+  <link rel="stylesheet" href="./style.css">
 </head>
-<body>
-  <header>
-    <strong>Still</strong><span>Local review · private library</span>
-    <button id="browse">Browse for video</button><button id="reconnect" hidden>Reconnect folder</button><button id="download-draft" hidden>Download unsaved draft</button>
-    <span id="save-state" role="status">Choose a folder</span>
+<body class="sofa">
+  <header class="topbar">
+    <button id="server" class="server-button" aria-haspopup="dialog" aria-controls="server-dialog">Server</button>
+    <a class="brand" href="./" aria-label="Still ASL review studio"><span class="brand-mark">s.</span><span>still<span class="brand-caption">ASL REVIEW STUDIO</span></span></a>
+    <div class="assignment-picker"><span id="video-path" class="video-path"></span></div>
+    <div class="top-actions"><span id="save-state" class="save-state" role="status">Connecting…</span><button id="reconnect-folder" class="quiet" hidden>Reconnect folder</button><button id="download-draft" class="quiet" hidden>Download unsaved draft</button><button id="controller-status" class="quiet">Setup</button><button id="video-folders" class="menu-button" aria-keyshortcuts="B" title="Browse for video (B)">Browse for video <kbd>B</kbd></button></div>
   </header>
-  <main>
-    <aside>
-      <nav id="breadcrumbs" aria-label="Video folders"></nav>
-      <div id="branches"></div>
-      <h2>Videos in this folder</h2>
-      <div id="videos"></div>
-      <button id="evaluated">View evaluated videos</button>
-      <button id="back-review" hidden>Back to reviews</button>
-      <hr>
-      <button id="library-setup">Set up library folder</button><button id="library-open">Reusable recordings</button>
+  <main class="workspace">
+    <aside id="video-list-panel" class="video-list-panel" aria-label="Video details">
+      <h2>Videos</h2>
+      <div id="video-list" class="video-list"></div>
     </aside>
-    <section class="studio">
-      <div class="studio-heading"><h1 id="video-name">Choose a video folder</h1><span id="review-status"></span></div>
-      <div id="screen">
-        <video id="student" playsinline controls preload="metadata"></video>
-        <video id="teacher" playsinline muted hidden></video>
-        <div id="timestamp" hidden></div><div id="caption" hidden></div>
+    <section class="review-stage" aria-label="Student video review">
+      <div class="stage-heading"><div><span id="review-kicker" class="eyebrow" hidden>SETTLE IN. TAKE YOUR TIME.</span><h1 id="student-title">Your review studio</h1><p id="source-note" class="muted"></p></div><div class="stage-actions"><button id="previous-student" class="quiet small" aria-label="Previous video" aria-keyshortcuts="[" title="Previous video ([)">Previous video <kbd>[</kbd></button><button id="next-student" class="quiet small" aria-label="Next video" aria-keyshortcuts="]" title="Next video (])">Next video <kbd>]</kbd></button><label class="checkbox preview-toggle"><input id="student-preview" type="checkbox">Student preview</label><span id="student-status" class="status-pill">Ready when you are</span></div></div>
+      <p id="evaluated-warning" class="evaluated-warning" role="alert" hidden>Already evaluated videos are read-only. Do not edit videos in the evaluated folder. New evaluated videos appear automatically. Browse to the original video folder to make changes.</p>
+      <div class="video-fit"><div id="video-shell" class="video-shell">
+        <video id="student-video" playsinline preload="metadata" aria-label="Original submission video"></video>
+        <video id="correction-video" playsinline preload="metadata" aria-label="Signed correction" hidden></video>
+        <p id="correction-subtitle" class="feedback-subtitle" hidden></p>
+        <p id="feedback-subtitle" class="feedback-subtitle" hidden></p>
+        <p id="feedback-timestamp" class="feedback-timestamp" aria-label="Original feedback timestamp" hidden></p>
+        <div id="empty-stage" class="empty-stage"><div class="empty-monogram">s.</div><h2>A little space to watch closely.</h2><p>Import your students’ videos.<br>Watch, mark a moment, and respond in ASL.</p><button id="empty-import" class="primary">Import your first videos</button></div>
+        <div id="cleaned-stage" class="empty-stage" hidden><h2>Working media cleaned up</h2><p>Your timestamps and subtitle text are saved.<br>Select a timestamp below to read the feedback.</p><a id="cleaned-video" target="_blank" rel="noopener">Open evaluated video</a><p id="cleaned-correction" hidden></p></div>
+      </div></div>
+      <div id="preview-controls" class="preview-controls" hidden></div>
+      <div id="render-status" class="render-status" role="status" hidden><span id="render-message">Preparing final export…</span><progress id="render-progress" max="1" value="0" aria-label="Export rendering progress"></progress><button id="cancel-render" class="small">Cancel export</button></div>
+      <div class="transport">
+        <div class="timeline-label"><span id="time">00:00</span><span id="range-label" class="range-label">Choose a moment worth revisiting</span><span id="duration">00:00</span></div>
+        <label class="sr-only" for="seek">Playback position</label><input id="seek" type="range" min="0" max="1" step="0.01" value="0"><div id="timeline-markers" class="timeline-markers" aria-label="Feedback sections"></div>
+        <div class="playback-row"><!-- Mark range controls temporarily disabled; retained for restoration.
+        <div class="mark-buttons"><button id="mark-in" class="quiet">Mark start <kbd>I</kbd></button><button id="mark-out" class="quiet">Mark end <kbd>O</kbd></button></div>
+        --><div class="playback-main"><button id="back" class="icon-button" aria-label="Seek back 0.1 seconds">‹</button><button id="play" class="play-button" aria-label="Play video">▶</button><button id="forward" class="icon-button" aria-label="Seek forward 0.1 seconds">›</button><label class="speed-label">Speed<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option></select></label><button id="loop" class="quiet" aria-pressed="false">Loop section</button><button id="fullscreen" class="quiet">Full screen</button><button id="export" class="primary" aria-keyshortcuts="E" title="Export feedback (E)">Export feedback <kbd>E</kbd></button><button id="add-feedback" class="primary" aria-keyshortcuts="M" title="Feedback (M)">Feedback <kbd>M</kbd></button></div><div class="tracking-row"><button id="track-motion" class="quiet" disabled>Track fingers & mouth</button><button id="view-tracking" class="quiet" disabled>View tracking video</button><button id="view-points" class="quiet" disabled>View points only</button></div></div>
       </div>
-      <div class="toolbar">
-        <label><input type="checkbox" id="preview"> Student preview</label>
-        <button id="preview-play" hidden>Play preview</button><input id="preview-seek" type="range" min="0" max="1" step="0.01" value="0" hidden aria-label="Preview position">
-        <span id="preview-time"></span>
-        <button id="add-point">Add feedback at current time</button>
-        <button id="add-range">Add feedback range</button>
-        <button id="export">Export final MP4</button>
-        <button id="cancel-export" hidden>Cancel export</button>
-      </div>
-      <div id="export-progress" hidden><progress id="progress" max="1" value="0"></progress><span id="progress-label"></span></div>
-      <div id="feedback-list"></div>
-      <div class="correction-row"><button id="record-correction">Record untimed correction</button><button id="attach-correction">Attach library correction</button><button id="save-correction-library" hidden>Save correction to library</button><span id="correction-label"></span></div>
-      <p class="help">Review files and private recordings stay in this folder. Saving to the reusable library copies the recording into the local shelf; it does not upload.</p>
     </section>
+    <aside id="feedback-panel" class="feedback-panel" hidden>
+      <div class="panel-heading"><div><span class="eyebrow">A MOMENT TO REVISIT</span><h2>Signed feedback</h2></div><button id="close-feedback" class="icon-button" aria-label="Close feedback panel">×</button></div>
+      <div id="no-feedback" class="empty-panel">Mark a moment or section, then record an explanation or choose a saved clip.</div>
+      <div id="feedback-editor" hidden>
+        <div class="range-fields"><label>Start (s)<input id="feedback-start" type="number" min="0" step="0.01"></label><label>End (s)<input id="feedback-end" type="number" min="0" step="0.01"></label></div>
+        <label>Subtitle <span class="optional">optional</span><textarea id="feedback-note" rows="3" placeholder="A reminder, a practice idea, or a little encouragement."></textarea></label>
+        <div class="section-label">Correction clip</div><div id="attached-clips"></div><div class="row"><button id="editor-record" class="small primary">Record</button><button id="editor-library" class="small">Find clip</button></div>
+        <details class="private-details"><summary>Private instructor note</summary><textarea id="private-note" rows="2" aria-label="Private instructor note"></textarea><small>Not included in student feedback.</small></details>
+        <button id="remove-feedback" class="quiet danger">Remove this feedback</button>
+      </div>
+    </aside>
   </main>
-  <dialog id="feedback-dialog">
-    <h2>Feedback</h2>
-    <div class="grid"><label>Start (seconds)<input id="start" type="number" min="0" step="0.01"></label><label>End (seconds)<input id="end" type="number" min="0" step="0.01"></label></div>
-    <label>Student caption / written note<textarea id="note" rows="3"></textarea></label>
-    <label>Private note<textarea id="private-note" rows="2"></textarea></label>
-    <p id="attached"></p>
-    <div class="actions"><button id="record-section">Record response</button><button id="attach-section">Attach library clip</button><button id="save-private-library">Save attached private clip to library</button><button id="remove-clip">Remove clip</button><button id="delete-feedback">Delete feedback</button><button id="retry-save">Retry save</button><button id="close-feedback">Done</button></div>
-  </dialog>
-  <dialog id="recorder-dialog">
-    <h2>Record response</h2>
-    <video id="camera" autoplay playsinline muted></video><video id="take" playsinline controls hidden></video>
-    <div id="record-controls"><button id="record-start">Start recording</button><button id="record-stop" hidden>Stop</button><button id="record-retake" hidden>Retake</button></div>
-    <div id="trim-fields" hidden class="grid"><label>Trim start (s)<input id="trim-start" type="number" min="0" step="0.01" value="0"></label><label>Trim end (s)<input id="trim-end" type="number" min="0" step="0.01"></label></div>
-    <div class="actions"><button id="use-recording" hidden>Use this clip locally</button><button id="close-recorder">Cancel</button></div>
-  </dialog>
-  <dialog id="library-dialog">
-    <h2>Reusable recordings</h2>
-    <input id="library-search" type="search" placeholder="Search clips, tags, subtitles">
-    <div class="actions"><label class="file-button">Import a clip into library<input id="library-import" type="file" accept="video/*,.mkv" hidden></label><input id="library-replace" type="file" accept="video/*,.mkv" hidden><button id="close-library">Done</button></div>
-    <div id="library-list"></div>
-  </dialog>
-  <dialog id="library-edit-dialog">
-    <h2>Save reusable clip</h2>
-    <label>Title<input id="library-title" maxlength="200"></label>
-    <label>Subtitle burned into export<textarea id="library-subtitle" rows="2"></textarea></label>
-    <label>Tags (comma separated)<input id="library-tags"></label>
-    <div class="actions"><button id="library-save">Save to library</button><button id="library-edit-cancel">Cancel</button></div>
-  </dialog>
-  <dialog id="library-preview-dialog"><h2 id="library-preview-title">Clip preview</h2><video id="library-preview-video" playsinline controls></video><p id="library-preview-caption"></p><button id="close-library-preview">Done</button></dialog>
-  <div id="toast" role="status" hidden></div>
-  <script type="module" src="./hosted.js"></script>
+  <footer class="bottom-bar"><span id="context-hint">Space Play/pause · I/O Mark · R Record · F Library · B Browse</span><span id="review-progress">Manual review · your pace</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="busy" class="busy" role="status" hidden><div class="spinner"></div><h2 id="busy-label">Saving your clip…</h2><p>Your current review is preserved.</p></div>
+  <input id="video-import" type="file" accept="video/*,.mov,.mkv,.avi" multiple hidden><input id="reference-import" type="file" accept="video/*,.mov" hidden>
+
+  <dialog id="library-dialog" class="library-dialog"><div class="dialog-heading"><div><span class="eyebrow">YOUR REUSABLE EXPLANATIONS</span><h2>Teacher response library</h2></div><button id="library-setup" hidden title="Set up/change library folder">Library folder</button><button data-close class="icon-button" aria-label="Close clip library">×</button></div><div class="library-toolbar"><label class="sr-only" for="library-search">Search titles, tags, subtitles, and aliases</label><input id="library-search" type="search" placeholder="Try a few words: question, face, palm…"><button id="library-import">Import clip</button><button id="library-cleanup">Clean up evaluated reviews</button></div><div id="library-tabs" class="tabs" role="group" aria-label="Clip library filters"><button data-filter="recent" aria-pressed="true">Recent</button><button data-filter="all">All clips</button><button data-filter="favorites">Favorites</button><div id="library-tag-filters" class="library-tag-filters" role="group" aria-label="Tags"></div></div><div class="library-view-control" role="group" aria-label="Saved clip display"><span>Display</span><button type="button" data-library-view="large" aria-pressed="false">Large thumbnails</button><button type="button" data-library-view="small" aria-pressed="true">Small thumbnails</button><button type="button" data-library-view="list" aria-pressed="false">List only</button></div><p id="library-help" class="muted">Teacher responses are kept separately from student submissions. Preview a response, then attach it to this section.</p><div id="library-results" class="library-results"></div></dialog>
+  <dialog id="cleanup-dialog"><div class="dialog-heading"><h2>Clean up evaluated reviews</h2><button data-close class="icon-button" aria-label="Close cleanup">×</button></div><p>Keep evaluated MP4s, feedback timestamps, and subtitle text. Permanently remove the selected reviews’ working video copies, recordings, thumbnails, and tracking files.</p><p class="muted">Reusable library clips, media needed by other reviews, and original files outside the app are kept. Cleaned reviews become read-only. Cleanup cannot be undone.</p><div id="cleanup-reviews"></div><p id="cleanup-empty" class="muted" hidden>No reviews are ready for cleanup. Finish and export a review first. Older exports need to be exported again to verify the current feedback.</p><div class="dialog-footer"><button data-close>Cancel</button><button id="cleanup-confirm" class="danger" disabled>Clean up selected reviews</button></div></dialog>
+  <dialog id="clip-dialog"><div class="dialog-heading"><h2 id="clip-title">Preview saved clip</h2><button data-close class="icon-button" aria-label="Close clip preview">×</button></div><div class="clip-preview"><video id="clip-video" controls playsinline preload="metadata"></video><p id="clip-description" class="feedback-subtitle above-controls" hidden></p></div><div id="clip-tags" class="tag-row"></div><div class="dialog-footer"><button data-close>Back</button><button id="clip-edit">Edit details</button><button id="clip-attach" class="primary">Attach to this section</button></div></dialog>
+  <dialog id="library-edit-dialog"><form id="library-form"><div class="dialog-heading"><h2>Clip details</h2><button type="button" data-close class="icon-button" aria-label="Close clip details">×</button></div><label>Title<input id="library-title" required maxlength="200"></label><fieldset id="library-tag-fieldset"><legend>Tags</legend><div id="library-tag-checks" class="tag-choices"></div></fieldset><label>New tags <span class="optional">comma separated</span><input id="library-tags" placeholder="question, face, practice"></label><label>Subtitle <span class="optional">optional</span><textarea id="library-description" rows="3" placeholder="A reminder, a practice idea, or a little encouragement."></textarea></label><small class="muted">Shown as a subtitle while this clip plays.</small><label>Aliases <span class="optional">comma separated</span><input id="library-aliases" placeholder="Your own shorthand"></label><label class="checkbox"><input id="library-favorite" type="checkbox">Favorite this clip</label><div class="row"><button id="replace-library-video" type="button">Replace video · new version</button><button id="archive-library" type="button" class="quiet danger">Archive clip</button><button id="delete-library" type="button" class="quiet danger">Delete clip</button></div><div class="dialog-footer"><button type="button" data-close>Cancel</button><button type="submit" class="primary">Save clip details</button><button id="library-save-add" type="submit" class="primary" hidden>Save and add to this section</button></div></form></dialog>
+  <dialog id="recorder-dialog" class="recorder-dialog"><div class="dialog-heading"><div><span class="eyebrow">A PERSONAL DEMONSTRATION</span><h2 id="recorder-title">Show the correction in ASL</h2></div><button id="recorder-close" class="icon-button" aria-label="Close recorder">×</button></div><div class="camera-shell"><video id="camera-video" autoplay muted playsinline></video><video id="recorded-video" controls playsinline hidden></video><p id="record-subtitle" class="feedback-subtitle above-controls" hidden></p><div id="countdown-overlay" class="countdown-overlay" hidden></div><span id="recording-badge" class="recording-badge" hidden>● Recording <span id="recording-time">00:00</span></span></div><p id="recorder-message" class="muted">Frame your face, hands, and signing space. Your student’s video is paused.</p><div id="camera-options" class="row"><label class="checkbox"><input id="microphone" type="checkbox">Include microphone audio</label><label class="checkbox"><input id="mirror-preview" type="checkbox">Mirror preview only</label></div><div id="trim-controls" class="trim-controls" hidden><label>Trim start <output id="trim-start-label">0.00 s</output><input id="trim-start" type="range" min="0" step="0.05" value="0"></label><label>Trim end <output id="trim-end-label">0.00 s</output><input id="trim-end" type="range" min="0" step="0.05"></label><button id="play-trim" class="small">Preview selected trim</button></div><div id="record-details" hidden><label>Clip title <span class="optional">optional</span><input id="record-title" maxlength="200" placeholder="e.g. Question facial markers"></label><label id="record-note-field">Feedback <span class="optional">optional</span><textarea id="record-note" rows="3" placeholder="A reminder, a practice idea, or a little encouragement."></textarea></label><label>Tags <span class="optional">comma separated</span><input id="record-tags" placeholder="question, face, practice" aria-describedby="record-tags-help"></label><p id="record-tags-help" class="muted">Add tags to save this recording to the clip shelf automatically and find it again by searching those words.</p></div><div class="dialog-footer"><button id="record-cancel">Cancel</button><button id="record-retake" hidden>Retake</button><button id="record-start" class="primary">Record · 3 second countdown</button><button id="record-stop" class="primary" hidden>Stop recording</button><button id="record-use" class="primary" hidden>Use this clip</button></div></dialog>
+  <dialog id="server-dialog"><div class="dialog-heading"><h2 id="server-heading">Server</h2><button data-close class="icon-button" aria-label="Close server status">×</button></div><p id="server-status" role="status" aria-live="polite">Checking connection…</p><p id="server-address" class="muted"></p><p id="browser-limits" class="muted" hidden>Tracking, automatic conversion, cleanup, physical library deletion, and opening folders in the file manager require the local Python app.</p><div class="row"><button id="storage-reconnect" hidden>Reconnect video folder</button><button id="storage-library" hidden>Set up/change library folder</button></div></dialog>
+  <dialog id="tracking-dialog" class="tracking-dialog"><div class="dialog-heading"><div><span class="eyebrow">FINGERS AND MOUTH</span><h2 id="tracking-title">Tracking video</h2></div><button data-close class="icon-button" aria-label="Close tracking video">×</button></div><video id="tracking-video" controls playsinline preload="metadata" aria-label="Finger and mouth tracking video"></video><p id="tracking-note" class="muted">Amber dots are fingertips. Pink dots are the mouth. This is a guide for review, not a score.</p><div class="dialog-footer"><button data-close class="primary">Back to review</button></div></dialog>
+  <dialog id="controller-dialog"><div class="dialog-heading"><h2>Make yourself comfortable.</h2><button data-close class="icon-button" aria-label="Close setup">×</button></div><p id="pad-detail">Connect your controller, then press a button with this app focused.</p><div class="controller-layout"><label>Button labels<select id="pad-labels"><option value="positions">Physical positions</option><option value="xbox">Xbox labels</option><option value="playstation">PlayStation labels</option></select></label><label>Recording countdown<select id="countdown-setting"><option value="0">No countdown</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select></label></div><div id="pad-bindings" class="pad-bindings"></div><details><summary>Customize keyboard shortcuts</summary><div id="shortcut-bindings" class="pad-bindings"></div></details><p class="muted">Direction pad moves focus in menus. Triggers seek during playback. Put the controller down while signing. Device compatibility needs testing with your own controller.</p><div class="dialog-footer"><button id="reset-pad">Reset controls</button><button data-close class="primary">Back to review</button></div></dialog>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
