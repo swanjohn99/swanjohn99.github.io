@@ -26,7 +26,7 @@ async function setting(key, value) {
 }
 
 export class LocalFolders {
-  constructor() {this.root = null; this.path = []; this.folder = null; this.document = null; this.revision = 0; this.files = new Map(); this.library = null;}
+  constructor() {this.root = null; this.path = []; this.folder = null; this.document = null; this.revision = 0; this.files = new Map(); this.library = null; this.savedLibrary = null;}
   async restore() {
     this.root = await setting('root') || null;
     this.path = await setting('path') || [];
@@ -50,10 +50,14 @@ export class LocalFolders {
   async restoreLibrary() {
     this.library = null;
     if (await setting('libraryOverride')) {
-      this.library = await setting('library') || null;
-      if (this.library) return true;
+      this.savedLibrary = await setting('library') || null;
+      if (this.savedLibrary && (await this.savedLibrary.queryPermission({mode: 'readwrite'})) === 'granted') {
+        this.library = this.savedLibrary;
+        return true;
+      }
+      return false;
     }
-    if (this.root) {
+    if (this.root && (await this.root.queryPermission({mode: 'readwrite'})) === 'granted') {
       try {
         const data = await this.root.getDirectoryHandle('data');
         const directory = await data.getDirectoryHandle('library');
@@ -62,14 +66,22 @@ export class LocalFolders {
         return true;
       } catch (error) {if (error.name !== 'NotFoundError') throw error;}
     }
-    this.library = await setting('library') || null;
-    return !!this.library;
+    this.savedLibrary = await setting('library') || null;
+    if (this.savedLibrary && (await this.savedLibrary.queryPermission({mode: 'readwrite'})) === 'granted') {
+      this.library = this.savedLibrary;
+      return true;
+    }
+    return false;
   }
   async chooseLibrary() {
     if (!this.library) await this.restoreLibrary();
-    if (this.library) {
-      if ((await this.library.queryPermission({mode: 'readwrite'})) === 'granted' ||
-          (await this.library.requestPermission({mode: 'readwrite'})) === 'granted') return this.library;
+    const candidate = this.library || this.savedLibrary;
+    if (candidate) {
+      if ((await candidate.queryPermission({mode: 'readwrite'})) === 'granted' ||
+          (await candidate.requestPermission({mode: 'readwrite'})) === 'granted') {
+        this.library = candidate;
+        return candidate;
+      }
     }
     return this.selectLibrary();
   }
@@ -88,6 +100,7 @@ export class LocalFolders {
       await writer.close();
     }
     this.library = directory;
+    this.savedLibrary = directory;
     await setting('library', directory);
     await setting('libraryOverride', true);
     return directory;
@@ -142,6 +155,7 @@ export class LocalFolders {
   async reconnect() {
     if (!this.root) return this.activate(await this.choose());
     if ((await this.root.requestPermission({mode: 'readwrite'})) !== 'granted') throw new Error('Folder access was denied. Choose Browse for video to reconnect.');
+    this.path = await setting('path') || this.path;
   }
   async directory(path = this.path) {
     if (!this.root) throw new Error('Choose a video folder first.');

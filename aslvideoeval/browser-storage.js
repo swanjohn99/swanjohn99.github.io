@@ -45,27 +45,33 @@ export class BrowserStorage {
   revision() { return `${this.folders.revision}:${this.catalog.revision}`; }
   async initialize() {
     if (this.ready) return;
-    this.ready = true;
-    try { this.session = {...initialSession(), ...JSON.parse(localStorage.getItem('still-browser-session') || '{}')}; }
-    catch { this.session = initialSession(); }
-    this.session.assignment_id = null;
-    this.session.submission_id = null;
-    this.session.feedback_id = null;
-    if (await this.folders.restore()) {
-      await this.open(this.folders.path);
-      const draft = await this.folders.recoveryDraft();
-      if (draft?.revision === this.folders.revision && confirm('Recover unsaved edits from this browser?')) {
-        await this.folders.acceptDraft(draft);
-        await this.folders.save();
-      } else this.pendingDraft = draft;
-    } else {
-      await this.loadCatalog();
+    try {
+      try { this.session = {...initialSession(), ...JSON.parse(localStorage.getItem('still-browser-session') || '{}')}; }
+      catch { this.session = initialSession(); }
+      this.session.assignment_id = null;
+      this.session.submission_id = null;
+      this.session.feedback_id = null;
+      if (await this.folders.restore()) {
+        await this.open(this.folders.path);
+        const draft = await this.folders.recoveryDraft();
+        if (draft?.revision === this.folders.revision && confirm('Recover unsaved edits from this browser?')) {
+          await this.folders.acceptDraft(draft);
+          await this.folders.save();
+        } else this.pendingDraft = draft;
+      } else {
+        await this.loadCatalog();
+      }
+      this.ready = true;
+    } catch (error) {
+      this.ready = false;
+      throw error;
     }
   }
   async loadWorkspace() {await this.initialize(); return this.workspace();}
   async loadCatalog() {
     await this.folders.restoreLibrary();
-    if (!this.folders.library && this.folders.root) {
+    const rootGranted = this.folders.root && (await this.folders.root.queryPermission({mode: 'readwrite'})) === 'granted';
+    if (!this.folders.library && !this.folders.savedLibrary && rootGranted) {
       const data = await this.folders.root.getDirectoryHandle('data', {create: true});
       const directory = await data.getDirectoryHandle('library', {create: true});
       const catalog = await directory.getFileHandle('catalog.json', {create: true});
@@ -182,7 +188,10 @@ export class BrowserStorage {
   }
   workspace() {
     const session = {...this.session, source_folder: this.path};
-    if (!this.folders.root) return {revision: this.revision(), state: {assignments: [], submissions: [], library: clone(this.catalog.library), session}, assets: clone(this.catalog.assets), capabilities: this.capabilities(), categories: [], purposes: [], source_folder: '', output_folder: '', not_submitted: []};
+    if (!this.folders.root || !this.folders.folder) {
+      session.source_folder = '';
+      return {revision: this.revision(), state: {assignments: [], submissions: [], library: clone(this.catalog.library), session}, assets: clone(this.catalog.assets), capabilities: this.capabilities(), categories: [], purposes: [], source_folder: '', output_folder: '', not_submitted: []};
+    }
     if (this.evaluated) {
       const assignmentId = 'evaluated-' + (this.folders.root.name + this.folders.path.join('/'));
       const assets = [...this.folders.files.keys()].map(name => ({id: name, kind: 'submission', name, filename: name, source_path: `${this.path}/${encodeURIComponent(name)}`, source_folder: this.path, evaluated_version: this.evaluatedVersions.get(name)}));

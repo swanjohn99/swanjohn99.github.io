@@ -995,6 +995,8 @@ function applyWorkspace(data) {
   state = data.state; revision = data.revision;
   restoreWindowView();
   assets = new Map(data.assets.map(item => [item.id, item]));
+  if (!currentAssignment()) state.session.assignment_id = state.assignments[0]?.id || null;
+  if (!submission()) state.session.submission_id = submissions()[0]?.id || null;
   history = []; savedCount = editCount; clearTimeout(saveTimer);
   updateFolderPaths(data);
   selectedAsset = assetId === submission()?.asset_id ? assetId : null;
