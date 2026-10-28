@@ -29,6 +29,7 @@ export class BrowserStorage {
     this.session = initialSession();
     this.roster = [];
     this.evaluatedVersions = new Map();
+    this.exportIndicators = new Map();
     this.savedAssets = '[]';
     this.pendingDocumentSave = false;
     this.mediaGeneration = 0;
@@ -67,7 +68,30 @@ export class BrowserStorage {
       throw error;
     }
   }
-  async loadWorkspace() {await this.initialize(); return this.workspace();}
+  async loadWorkspace() {
+    await this.initialize();
+    await this.refreshExportIndicators();
+    return this.workspace();
+  }
+  async refreshExportIndicators() {
+    this.exportIndicators.clear();
+    if (!this.folders.folder || this.evaluated) return;
+    let directory;
+    try {directory = await this.folders.folder.getDirectoryHandle('evaluated');}
+    catch (error) {if (error.name === 'NotFoundError') return; throw error;}
+    const filenames = [];
+    for await (const handle of directory.values()) if (handle.kind === 'file') filenames.push(handle.name);
+    for (const review of this.folders.document.reviews) {
+      const stem = (review.filename || '').replace(/\.[^.]+$/, '');
+      const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp('^' + escaped + '(?: \\([1-9]\\d*\\))?(?:_uploaded)?\\.mp4$', 'i');
+      const matches = filenames.filter(name => pattern.test(name));
+      this.exportIndicators.set(review.id, {
+        evaluated_export_count: matches.length,
+        evaluated_uploaded: matches.some(name => /_uploaded\.mp4$/i.test(name)),
+      });
+    }
+  }
   async loadCatalog() {
     await this.folders.restoreLibrary();
     const rootGranted = this.folders.root && (await this.folders.root.queryPermission({mode: 'readwrite'})) === 'granted';
@@ -161,6 +185,7 @@ export class BrowserStorage {
     for (const asset of this.catalog.assets) if (!this.urls.has(asset.id)) {
       try {await this.cacheAsset(asset, await this.folders.libraryFileFor(asset));} catch {}
     }
+    await this.refreshExportIndicators();
     return this.workspace();
   }
   async notSubmitted() {
@@ -201,7 +226,7 @@ export class BrowserStorage {
     }
     const document = this.folders.document;
     const assignmentId = document.folder_id;
-    const submissions = document.reviews.map(review => ({...clone(review), asset_id: review.asset_id, assignment_id: assignmentId, name: (review.filename || '').replace(/\.[^.]+$/, ''), position: 0}));
+    const submissions = document.reviews.map(review => ({...clone(review), evaluated_export_count: 0, evaluated_uploaded: false, ...this.exportIndicators.get(review.id), asset_id: review.asset_id, assignment_id: assignmentId, name: (review.filename || '').replace(/\.[^.]+$/, ''), position: 0}));
     const localAssets = document.assets.map(asset => ({...clone(asset), kind: asset.kind === 'student' ? 'submission' : asset.kind === 'private' ? 'correction' : asset.kind, name: asset.filename, source_folder: this.path, source_path: asset.kind === 'student' ? `${this.path}/${encodeURIComponent(asset.filename)}` : undefined}));
     const libraryAssets = this.catalog.assets.map(asset => ({...clone(asset), kind: 'reference', name: asset.filename}));
     const uniqueAssets = new Map([...libraryAssets, ...localAssets].map(asset => [asset.id, asset]));
