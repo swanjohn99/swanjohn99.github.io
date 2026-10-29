@@ -71,6 +71,7 @@ function render() {
       actions.className = 'card-actions';
       actions.append(button('Edit', 'text-button', () => openEditor(question)), button('Delete', 'text-button delete', () => {
         lesson.questions = lesson.questions.filter(q => q.id !== question.id);
+        answers = new Map();
         save(); render();
       }));
       card.append(actions);
@@ -132,8 +133,11 @@ async function mountVideo() {
           if (player.getDuration() > 0 && duration !== player.getDuration()) {
             duration = player.getDuration(); render();
           }
-          if (mode === 'preview' && activeQuestion && event.data === 1) player.pauseVideo();
-          if (mode === 'preview' && event.data === 0) tick(true);
+          if (event.data === 1) {
+            if (activeQuestion) player.pauseVideo();
+            else tick();
+          }
+          if (event.data === 0) tick(true);
         },
         onError: event => {
           playerReady = false;
@@ -218,6 +222,7 @@ $('question-form').addEventListener('submit', event => {
   const question = { id: editingId ?? crypto.randomUUID(), time, prompt, options: rawOptions.filter(Boolean), correct: rawOptions.slice(0, selected).filter(Boolean).length };
   if (editingId) lesson.questions = lesson.questions.map(q => q.id === editingId ? question : q);
   else lesson.questions.push(question);
+  answers = new Map();
   save(); render(); $('question-dialog').close();
 });
 
@@ -225,10 +230,10 @@ function switchMode(nextMode) {
   mode = nextMode;
   if (playerReady) player.pauseVideo();
   activeQuestion = null;
+  answers = new Map();
   $('answer-dialog').close();
   $('preview-summary').hidden = true;
   if (mode === 'preview') {
-    answers = new Map();
     if (playerReady) player.seekTo(0, true);
     $('video-meta').textContent = 'Student preview · Press play to begin';
     toast('Press play. The video will pause for each question.');
@@ -258,12 +263,13 @@ function showQuestion(question) {
   $('answer-dialog').showModal();
 }
 
-function tick(ended = false) {
-  if (mode !== 'preview' || !playerReady || activeQuestion || !lesson) return;
-  const current = ended ? duration : player.getCurrentTime();
+function tick(ended = false, continuing = false) {
+  if (!playerReady || activeQuestion || !lesson?.questions.length) return;
+  if (!ended && !continuing && player.getPlayerState() !== 1) return;
+  const current = ended ? Infinity : player.getCurrentTime();
   const next = dueQuestion(lesson.questions, new Set(answers.keys()), current);
   if (next) { showQuestion(next); return; }
-  if (answers.size === lesson.questions.length && lesson.questions.length) {
+  if (mode === 'preview' && answers.size === lesson.questions.length) {
     const score = [...answers.values()].filter(Boolean).length;
     $('preview-summary').textContent = `All questions answered! ${score} of ${lesson.questions.length} correct. Switch to Edit lesson to make changes, or click Student preview to try again.`;
     $('preview-summary').hidden = false;
@@ -285,7 +291,7 @@ $('answer-form').addEventListener('submit', event => {
   } else {
     activeQuestion = null;
     $('answer-dialog').close();
-    tick();
+    tick(false, true);
     if (!activeQuestion) player.playVideo();
   }
 });
