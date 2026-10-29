@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <title>Frame — Video lessons, with a little more thought</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Frame home"><span class="brand-mark">f<span>•</span></span>frame<span class="beta">BETA</span></a>
+    <span class="top-note">A little pause. A lot of learning.</span>
+    <span class="avatar" aria-label="Local workspace">M</span>
+  </header>
+  <main>
+    <div class="breadcrumb"><span class="tiny-grid">▦</span> My workspace <span>/</span> Video lesson</div>
+    <section class="page-heading">
+      <div><div class="eyebrow">YOUR NEXT GREAT LESSON</div><h1>Make any video a learning moment.</h1><p>Add a video. Ask a question. Get minds moving.</p></div>
+      <span class="local-pill"><span></span> Saved on this device</span>
+    </section>
+
+    <section class="import-card">
+      <div class="step-icon">↗</div>
+      <div class="import-content"><h2>Start with a YouTube video</h2><p>Paste a link to bring your lesson to life.</p>
+        <form id="import-form"><label class="sr-only" for="video-url">YouTube video URL</label><div class="url-field"><span class="youtube-icon">▶</span><input id="video-url" type="url" placeholder="Paste a YouTube link here…" required autocomplete="off"></div><button class="primary" type="submit">Import video <span>→</span></button></form>
+        <p id="import-error" class="error" role="alert"></p>
+      </div>
+    </section>
+
+    <section class="lesson-toolbar"><div><span class="section-label">LESSON STUDIO</span><span class="draft-tag">Draft</span></div><div class="mode-switch" aria-label="Lesson mode"><button id="edit-mode" class="active" type="button">✎ &nbsp; Edit lesson</button><button id="preview-mode" type="button" disabled>▷ &nbsp; Student preview</button></div></section>
+
+    <div class="studio-grid">
+      <section class="video-column">
+        <div id="video-shell" class="video-shell">
+          <div id="player"></div>
+          <div id="video-empty" class="video-empty"><div class="video-illustration"><div class="film-line"></div><span>▶</span><div class="film-line"></div></div><h2>A great lesson starts with a video.</h2><p>Import a YouTube video above to get started.</p><span class="empty-badge">YOUR VIDEO GOES HERE</span></div>
+        </div>
+        <p id="player-status" class="player-status" role="status"></p>
+        <div class="video-details"><div class="detail-icon">▤</div><div class="title-wrap"><label class="sr-only" for="lesson-title">Lesson title</label><input id="lesson-title" placeholder="Untitled video lesson" maxlength="120" disabled><p id="video-meta">Your video, your questions, your pace.</p></div></div>
+        <div id="timeline" class="timeline" aria-label="Question timeline"><div class="timeline-track" id="timeline-track"></div><div class="timeline-labels"><span>0:00</span><span id="duration-label">–:––</span></div></div>
+        <div id="preview-summary" class="preview-summary" hidden></div>
+        <div class="tip"><span>✦</span><p><strong>Give curiosity a place to pause.</strong> Add questions at key moments to help ideas stick.</p></div>
+      </section>
+
+      <aside class="questions-panel">
+        <div class="panel-heading"><div><h2>Questions <span id="question-count">0</span></h2><p>Small check-ins. Meaningful learning.</p></div><span class="question-icon">☷</span></div>
+        <div id="question-list"></div>
+        <div id="questions-empty" class="questions-empty"><div class="bubble-art">?<span>✦</span></div><h3>Make them think.</h3><p>Pause at a moment that matters<br>and add your first question.</p></div>
+        <button id="add-question" class="add-button" disabled>＋ &nbsp; Add a question</button>
+        <p class="panel-footnote">Multiple choice · Pauses video to answer</p>
+      </aside>
+    </div>
+    <footer><span class="footer-logo">frame</span><span>Made for curious minds.</span><span class="footer-right">MVP · No account needed</span></footer>
+  </main>
+
+  <dialog id="question-dialog"><form id="question-form"><div class="dialog-heading"><div><span class="eyebrow">A MOMENT TO THINK</span><h2 id="dialog-title">Add a question</h2></div><button class="icon-button" type="button" id="close-dialog" aria-label="Close question editor">×</button></div><label for="question-time">Pause video at <span class="field-hint">minutes:seconds</span></label><input id="question-time" placeholder="0:30" required pattern="[0-9]+:[0-5][0-9]"><label for="question-prompt">Your question</label><textarea id="question-prompt" placeholder="What should your students take away?" required maxlength="1000" rows="3"></textarea><div class="answers-label">Answer options <span class="field-hint">Select the correct answer</span></div><div id="answer-fields"></div><p id="question-error" class="error" role="alert"></p><div class="dialog-actions"><button type="button" class="secondary" id="cancel-question">Cancel</button><button class="primary" type="submit">Save question</button></div></form></dialog>
+  <dialog id="answer-dialog" aria-labelledby="answer-title"><div class="eyebrow" id="answer-timestamp"></div><h2 id="answer-title"></h2><form id="answer-form"><div id="student-options"></div><p id="answer-feedback" role="status"></p><button class="primary" type="submit" id="submit-answer">Check answer</button></form></dialog>
+  <div id="toast" role="status" class="toast" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
