@@ -25,6 +25,11 @@ export function dueQuestion(questions, answered, time) {
   return [...questions].sort((a, b) => a.time - b.time).find(q => !answered.has(q.id) && q.time <= time);
 }
 
+export function playbackLimit(questions, answered, duration) {
+  const next = dueQuestion(questions, answered, Infinity);
+  return Math.max(0, Math.min(duration, next?.time ?? duration));
+}
+
 export function validLesson(lesson) {
   return lesson && typeof lesson.title === 'string' && /^[\w-]{11}$/.test(lesson.videoId)
     && Array.isArray(lesson.questions) && lesson.questions.every(q =>

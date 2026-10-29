@@ -38,7 +38,20 @@
         </div>
         <p id="player-status" class="player-status" role="status"></p>
         <div class="video-details"><div class="detail-icon">▤</div><div class="title-wrap"><label class="sr-only" for="lesson-title">Lesson title</label><input id="lesson-title" placeholder="Untitled video lesson" maxlength="120" disabled><p id="video-meta">Your video, your questions, your pace.</p></div></div>
-        <div id="timeline" class="timeline" aria-label="Question timeline"><div class="timeline-track" id="timeline-track"></div><div class="timeline-labels"><span>0:00</span><span id="duration-label">–:––</span></div></div>
+        <div class="playback-controls" role="group" aria-label="Video controls">
+          <button id="toggle-play" class="secondary" type="button" disabled>Play</button>
+          <span id="current-time" class="current-time" aria-label="Elapsed time">0:00</span>
+          <button id="toggle-mute" class="text-button" type="button" aria-pressed="false" disabled>Mute</button>
+        </div>
+        <div id="timeline" class="timeline" aria-label="Video progress and questions">
+          <div class="playback-progress">
+            <label class="sr-only" for="video-progress">Video progress</label>
+            <input id="video-progress" type="range" min="0" max="1" step="0.1" value="0" aria-describedby="playback-hint" disabled>
+            <div class="timeline-track" id="timeline-track"></div>
+          </div>
+          <div class="timeline-labels"><span>0:00</span><span id="duration-label">–:––</span></div>
+          <p id="playback-hint" class="playback-hint">Import a video to begin.</p>
+        </div>
         <div id="preview-summary" class="preview-summary" hidden></div>
         <div class="tip"><span>✦</span><p><strong>Give curiosity a place to pause.</strong> Add questions at key moments to help ideas stick.</p></div>
       </section>

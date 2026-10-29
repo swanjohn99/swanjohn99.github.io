@@ -1,4 +1,4 @@
-import { parseYoutubeUrl, formatTime, parseTime, dueQuestion, validLesson } from './quiz.js';
+import { parseYoutubeUrl, formatTime, parseTime, dueQuestion, playbackLimit, validLesson } from './quiz.js';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'frame.lesson.v1';
@@ -13,6 +13,75 @@ let checked = false;
 let answers = new Map();
 let toastTimer;
 let duration = 0;
+let pendingSeek = null;
+
+function currentTime() {
+  if (!playerReady) return 0;
+  const time = player.getCurrentTime() || 0;
+  // YouTube may report the old position briefly after seekTo().
+  if (pendingSeek && Math.abs(time - pendingSeek.time) > 1 && performance.now() < pendingSeek.expires) {
+    return pendingSeek.time;
+  }
+  pendingSeek = null;
+  return time;
+}
+
+function seekPlayer(time) {
+  pendingSeek = { time, expires: performance.now() + 3000 };
+  player.seekTo(time, true);
+  renderPlayback(time);
+}
+
+function renderPlayback(time = currentTime()) {
+  const questions = lesson?.questions ?? [];
+  const next = dueQuestion(questions, answers, Infinity);
+  const limit = playbackLimit(questions, answers, duration);
+  const position = Math.max(0, Math.min(activeQuestion?.time ?? time, limit));
+  const playing = playerReady && player.getPlayerState() === 1 && !activeQuestion;
+  const progress = $('video-progress');
+  progress.max = duration || 1;
+  progress.value = position;
+  progress.disabled = !playerReady || duration <= 0 || Boolean(activeQuestion);
+  progress.style.setProperty('--played', `${duration ? position / duration * 100 : 0}%`);
+  progress.style.setProperty('--unlocked', `${duration ? limit / duration * 100 : 0}%`);
+  progress.setAttribute('aria-valuetext', `${formatTime(position)} of ${formatTime(duration)}${next ? `. Locked after ${formatTime(limit)} until you answer the question` : ''}`);
+  $('current-time').textContent = formatTime(position);
+  $('toggle-play').textContent = playing ? 'Pause' : 'Play';
+  $('toggle-play').disabled = !playerReady || Boolean(activeQuestion);
+  $('toggle-mute').disabled = !playerReady || Boolean(activeQuestion);
+  const muted = playerReady && player.isMuted();
+  $('toggle-mute').textContent = muted ? 'Unmute' : 'Mute';
+  $('toggle-mute').setAttribute('aria-pressed', String(muted));
+  $('playback-hint').textContent = !lesson ? 'Import a video to begin.'
+    : activeQuestion ? (checked ? 'Continue to resume the video.' : 'Answer this question to continue.')
+    : next ? `Answer the question at ${formatTime(next.time)} to unlock the next section.`
+    : questions.length ? 'All questions answered. The full video is unlocked.' : 'Add questions to create checkpoints.';
+}
+
+function seekVideo(requested) {
+  if (!playerReady || activeQuestion) return;
+  const target = Math.max(0, Math.min(requested, playbackLimit(lesson.questions, answers, duration)));
+  seekPlayer(target);
+  const next = dueQuestion(lesson.questions, answers, target);
+  if (next) showQuestion(next);
+}
+
+$('video-progress').addEventListener('input', event => seekVideo(Number(event.target.value)));
+$('toggle-play').addEventListener('click', () => {
+  if (!playerReady || activeQuestion) return;
+  if (player.getPlayerState() === 1) player.pauseVideo();
+  else {
+    tick(false, true);
+    if (!activeQuestion) player.playVideo();
+  }
+  renderPlayback();
+});
+$('toggle-mute').addEventListener('click', () => {
+  if (!playerReady || activeQuestion) return;
+  if (player.isMuted()) player.unMute();
+  else player.mute();
+  renderPlayback();
+});
 
 function toast(message) {
   $('toast').textContent = message;
@@ -54,7 +123,7 @@ function render() {
     const header = document.createElement('div');
     header.className = 'question-card-header';
     const seek = button(formatTime(question.time), 'time-chip', () => {
-      if (playerReady) player.seekTo(question.time, true);
+      if (playerReady) seekVideo(question.time);
       else toast('The video is still loading. You can keep editing your questions.');
     });
     seek.disabled = mode === 'preview';
@@ -89,6 +158,7 @@ function render() {
     }
   }
   $('duration-label').textContent = duration ? formatTime(duration) : '–:––';
+  renderPlayback();
 }
 
 function loadApi() {
@@ -108,6 +178,7 @@ function loadApi() {
 async function mountVideo() {
   playerReady = false;
   duration = 0;
+  pendingSeek = null;
   if (player) { player.destroy(); player = null; }
   if (!$('player')) {
     const target = document.createElement('div');
@@ -121,33 +192,34 @@ async function mountVideo() {
     await loadApi();
     player = new window.YT.Player('player', {
       videoId: lesson.videoId,
-      playerVars: { playsinline: 1, rel: 0, origin: location.origin },
+      playerVars: { controls: 0, disablekb: 1, fs: 0, playsinline: 1, rel: 0, origin: location.origin },
       events: {
         onReady: () => {
           playerReady = true;
           $('player-status').textContent = '';
           duration = player.getDuration() || 0;
+          const iframe = player.getIframe();
+          iframe.tabIndex = -1;
+          iframe.setAttribute('inert', '');
+          iframe.title = 'Lesson video. Use the video controls below.';
           render();
         },
         onStateChange: event => {
           if (player.getDuration() > 0 && duration !== player.getDuration()) {
             duration = player.getDuration(); render();
           }
-          if (event.data === 1) {
-            if (activeQuestion) player.pauseVideo();
-            else tick();
-          }
-          if (event.data === 0) tick(true);
+          tick(event.data === 0);
         },
         onError: event => {
           playerReady = false;
           $('player-status').textContent = [101, 150].includes(event.data)
             ? 'The owner has disabled embedding for this video. Import another YouTube video.'
             : 'This video could not be played. It may be private, restricted, unavailable, or blocked by your connection. Try another video.';
+          renderPlayback();
         }
       }
     });
-  } catch (error) { $('player-status').textContent = error.message; }
+  } catch (error) { $('player-status').textContent = error.message; renderPlayback(); }
 }
 
 $('import-form').addEventListener('submit', async event => {
@@ -183,7 +255,7 @@ function openEditor(question = null) {
   editingId = question?.id ?? null;
   $('question-form').reset();
   $('dialog-title').textContent = question ? 'Edit question' : 'Add a question';
-  $('question-time').value = formatTime(question?.time ?? (playerReady ? player.getCurrentTime() : 0));
+  $('question-time').value = formatTime(question?.time ?? currentTime());
   $('question-prompt').value = question?.prompt ?? '';
   $('question-error').textContent = '';
   $('answer-fields').replaceChildren();
@@ -234,7 +306,7 @@ function switchMode(nextMode) {
   $('answer-dialog').close();
   $('preview-summary').hidden = true;
   if (mode === 'preview') {
-    if (playerReady) player.seekTo(0, true);
+    if (playerReady) seekPlayer(0);
     $('video-meta').textContent = 'Student preview · Press play to begin';
     toast('Press play. The video will pause for each question.');
   } else $('video-meta').textContent = 'YouTube video · Add questions at any moment';
@@ -246,7 +318,7 @@ $('preview-mode').addEventListener('click', () => switchMode('preview'));
 function showQuestion(question) {
   activeQuestion = question; checked = false;
   player.pauseVideo();
-  player.seekTo(question.time, true);
+  seekPlayer(question.time);
   $('answer-timestamp').textContent = `PAUSE & THINK · ${formatTime(question.time)}`;
   $('answer-title').textContent = question.prompt;
   $('answer-feedback').textContent = '';
@@ -264,24 +336,37 @@ function showQuestion(question) {
 }
 
 function tick(ended = false, continuing = false) {
-  if (!playerReady || activeQuestion || !lesson?.questions.length) return;
-  if (!ended && !continuing && player.getPlayerState() !== 1) return;
-  const current = ended ? Infinity : player.getCurrentTime();
-  const next = dueQuestion(lesson.questions, new Set(answers.keys()), current);
+  if (!playerReady || !lesson) { renderPlayback(); return; }
+  const playing = player.getPlayerState() === 1;
+  if (activeQuestion) {
+    if (playing) player.pauseVideo();
+    renderPlayback(activeQuestion.time);
+    return;
+  }
+  const time = currentTime();
+  const next = dueQuestion(lesson.questions, answers, ended ? Infinity : time);
+  if (!ended && !continuing && !playing) {
+    if (next && time > next.time) seekPlayer(next.time);
+    renderPlayback();
+    return;
+  }
   if (next) { showQuestion(next); return; }
-  if (mode === 'preview' && answers.size === lesson.questions.length) {
+  if (mode === 'preview' && lesson.questions.length && answers.size === lesson.questions.length) {
     const score = [...answers.values()].filter(Boolean).length;
     $('preview-summary').textContent = `All questions answered! ${score} of ${lesson.questions.length} correct. Switch to Edit lesson to make changes, or click Student preview to try again.`;
     $('preview-summary').hidden = false;
   }
+  renderPlayback();
 }
-setInterval(() => tick(), 250);
+setInterval(() => tick(), 100);
 $('answer-dialog').addEventListener('cancel', event => event.preventDefault());
 $('answer-form').addEventListener('submit', event => {
   event.preventDefault();
   if (!activeQuestion) return;
   if (!checked) {
-    const selected = Number(new FormData($('answer-form')).get('student-answer'));
+    const selection = new FormData($('answer-form')).get('student-answer');
+    if (selection === null) return;
+    const selected = Number(selection);
     const correct = selected === activeQuestion.correct;
     answers.set(activeQuestion.id, correct);
     $('answer-feedback').textContent = correct ? 'That’s right! Nicely done.' : `Good try. The correct answer is: ${activeQuestion.options[activeQuestion.correct]}`;
@@ -289,10 +374,15 @@ $('answer-form').addEventListener('submit', event => {
     $('submit-answer').textContent = 'Continue video →';
     checked = true; render();
   } else {
+    const resumeAt = activeQuestion.time;
     activeQuestion = null;
     $('answer-dialog').close();
-    tick(false, true);
-    if (!activeQuestion) player.playVideo();
+    const next = dueQuestion(lesson.questions, answers, resumeAt);
+    if (next) showQuestion(next);
+    else {
+      seekPlayer(resumeAt);
+      player.playVideo();
+    }
   }
 });
 
