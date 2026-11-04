@@ -521,6 +521,9 @@ function renderPlayer() {
   $('student-title').title = name;
   $('student-status').textContent = item?.cleaned_at ? 'Cleaned up · text retained' : item?.status || 'Ready when you are';
   $('student-status').classList.toggle('ready', ['Ready', 'Exported'].includes(item?.status));
+  $('ready-review').disabled = !canExport(item) || !!item?.cleaned_at || ['Ready', 'Exported'].includes(item?.status);
+  $('publish-review').disabled = !item || !['Ready', 'Exported'].includes(item.status) || !!item.published;
+  $('publish-review').textContent = item?.published ? 'Published' : 'Publish';
   renderVideoPath();
   $('empty-stage').hidden = !!item;
   $('cleaned-stage').hidden = !item?.cleaned_at;
@@ -1823,6 +1826,7 @@ async function setupBrowserLibrary() {
 
 async function boot() {
   try {
+    if (!browserStorage) for (const id of ['classes-link', 'ready-review', 'publish-review']) $(id).hidden = false;
     if (browserStorage) {
       $('server').textContent = 'Storage';
       $('library-setup').hidden = false;
@@ -1838,6 +1842,13 @@ async function boot() {
       $('download-draft').hidden = !storage.pendingDraft;
     }
     restoreWindowView();
+    const requestedAssignment = new URLSearchParams(location.search).get('assignment');
+    if (requestedAssignment && state.assignments.some(item => item.id === requestedAssignment)) {
+      state.session.source_folder = '';
+      state.session.assignment_id = requestedAssignment;
+      state.session.submission_id = state.submissions.find(item => item.assignment_id === requestedAssignment)?.id || null;
+      state.session.feedback_id = null;
+    }
     assets = new Map(data.assets.map(asset => [asset.id, asset]));
     if (state.session.source_folder) {
       try {
@@ -1865,6 +1876,8 @@ async function boot() {
 
 dialogs.forEach(dialog => {dialog.querySelectorAll('[data-close]').forEach(node => node.addEventListener('click', () => closeDialog(dialog))); dialog.addEventListener('close', updateHint); dialog.addEventListener('cancel', event => {if (busy) {event.preventDefault(); return;} if (dialog === $('recorder-dialog')) {event.preventDefault(); cancelRecorder();}});});
 bindClick('play', playPause); bindClick('back', () => stepVideo(-.1)); bindClick('forward', () => stepVideo(.1));
+bindClick('ready-review', () => {if (!canExport(submission())) {notify('Add a correction clip or written note before marking the review ready.', true); return;} remember(); submission().status = 'Ready'; dirty(); renderPlayer(); notify('Review marked ready. Publish it when the student should see the feedback.');});
+bindClick('publish-review', async () => {if (!submission()) return; try {await saveNow(); await storage.request('/api/teacher/publish', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({submission_id:submission().id})}); submission().published = true; renderPlayer(); notify('Feedback published to the student.');} catch (error) {notify(error.message, true);}});
 $('seek').addEventListener('input', event => {
   if (studentPreviewOn() && previewPlayback) setPreviewTime(Number(event.target.value));
   else seek(Number(event.target.value));
