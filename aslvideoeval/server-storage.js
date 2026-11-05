@@ -1,5 +1,11 @@
 export class ServerStorage {
-  constructor() { this.mode = 'server'; }
+  constructor() {
+    this.mode = 'server';
+    this.mediaUrls = new Map();
+    this.mediaDownloads = new Map();
+    this.mediaCacheName = 'still-teacher-media-v1';
+    this.storagePersistence = null;
+  }
   async request(path, options = {}) {
     const response = await fetch(path, options);
     const data = await response.json();
@@ -27,7 +33,50 @@ export class ServerStorage {
     return this.request('/api/export/rendered?submission_id=' + encodeURIComponent(submissionId) + '&source_folder=' + encodeURIComponent(sourceFolder || ''),
       {method: 'POST', headers: {'Content-Type': 'video/mp4', 'X-Revision': String(revision)}, body: blob});
   }
-  mediaUrl(id, suffix = '') { return `/media/${id}${suffix}`; }
+  mediaUrl(id, suffix = '') {
+    if (!suffix && this.mediaUrls.has(id)) return this.mediaUrls.get(id);
+    return `/media/${id}${suffix}`;
+  }
+  async cacheTeacherMedia(ids, onCached = () => {}) {
+    if (!('caches' in globalThis) || !globalThis.navigator?.storage) return;
+    if (!this.storagePersistence) this.storagePersistence = Promise.resolve().then(() => navigator.storage.persist?.()).catch(() => false);
+    let cache;
+    try {await this.storagePersistence; cache = await caches.open(this.mediaCacheName);}
+    catch (error) {console.warn('Chrome persistent video storage is unavailable:', error); return;}
+    const unique = [...new Set(ids.filter(Boolean))];
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < unique.length) {
+        const id = unique[cursor++];
+        try {
+          let url = this.mediaUrls.get(id);
+          if (!url) {
+            let pending = this.mediaDownloads.get(id);
+            if (!pending) {
+              pending = (async () => {
+                const request = new Request(new URL(`/media/${id}`, location.origin));
+                let response = await cache.match(request);
+                if (!response) {
+                  response = await fetch(request, {credentials: 'same-origin'});
+                  if (!response.ok) throw new Error(`Could not download ${id} (${response.status}).`);
+                  await cache.put(request, response.clone());
+                }
+                const objectUrl = URL.createObjectURL(await response.blob());
+                this.mediaUrls.set(id, objectUrl);
+                return objectUrl;
+              })().finally(() => this.mediaDownloads.delete(id));
+              this.mediaDownloads.set(id, pending);
+            }
+            url = await pending;
+          }
+          onCached(id, url);
+        } catch (error) {
+          console.warn(`Could not keep teacher video ${id} in Chrome storage:`, error);
+        }
+      }
+    };
+    await Promise.all([worker(), worker()]);
+  }
   thumbnailUrl(id) { return this.mediaUrl(id, '/thumb'); }
   evaluatedUrl(asset, thumbnail = false) {
     return `${thumbnail ? '/evaluated-thumbnail' : '/evaluated-media'}?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`;
@@ -43,5 +92,5 @@ export class ServerStorage {
   cleanupReviews(submissionIds, revision) {return this.request('/api/cleanup', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({submission_ids: submissionIds, revision})});}
   pickReference() {return this.request('/api/pick-reference', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});}
   reportPlaybackError(assetId, reason) {return this.request('/api/playback-error', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({asset_id: assetId, reason})});}
-  dispose() {}
+  dispose() { for (const url of this.mediaUrls.values()) URL.revokeObjectURL(url); this.mediaUrls.clear(); }
 }

@@ -16,7 +16,7 @@ const videoShell = () => $('video-shell');
 const dialogs = [...document.querySelectorAll('dialog')];
 let showingCorrection = false;
 let state, revision = 0, assets = new Map(), capabilities = {}, history = [];
-let teacherClassTree = null;
+let teacherClassTree = null, isLmsTeacher = false;
 let selectedAsset = null, markedIn = null, markedOut = null, looping = false;
 let editCount = 0, savedCount = 0, saveTimer, saving = null, busy = false;
 let libraryFilter = 'recent', libraryTags = new Set(), libraryTarget = 'correction', previewEntry = null, editEntryId = null, newEntryAsset = null;
@@ -62,6 +62,13 @@ function rememberPosition() {
 }
 function restoreWindowView(view = windowSession ? {session: windowSession, positions: localPositions} : storedWindowView()) {
   if (browserStorage && !storage.folders.root) return;
+  if (isLmsTeacher && view?.session) {
+    const {source_folder, ...teacherSession} = view.session;
+    Object.assign(state.session, teacherSession);
+    localPositions = view.positions || localPositions;
+    for (const item of state.submissions) if (Number.isFinite(localPositions[item.id])) item.position = localPositions[item.id];
+    return;
+  }
   if (browserStorage && view?.session?.source_folder && storage.folders.root &&
       !view.session.source_folder.startsWith('/video/' + encodeURIComponent(storage.folders.root.name))) return;
   if (view?.session) Object.assign(state.session, view.session);
@@ -155,6 +162,7 @@ function notify(message, error = false) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => {$('toast').hidden = true;}, error ? 9000 : 4000);
 }
 const readWorkspace = () => {
+  if (isLmsTeacher) return storage.loadWorkspace();
   const folder = state?.session.source_folder ?? storedWindowView()?.session?.source_folder;
   return storage.loadWorkspace(folder);
 };
@@ -447,7 +455,7 @@ async function folderChildren(path) {
   return (await folderChoices.get(path)).folders;
 }
 async function renderVideoPath() {
-  if (teacherClassTree) {renderTeacherClassPath(); return;}
+  if (isLmsTeacher) {renderTeacherClassPath(); return;}
   if (browserStorage) {renderBrowserVideoPath().catch(error => notify(error.message, true)); return;}
   const box = $('video-path');
   const token = ++pathRenderToken;
@@ -489,7 +497,7 @@ async function renderVideoPath() {
 function renderTeacherClassPath() {
   const box = $('video-path');
   box.replaceChildren();
-  const classes = teacherClassTree.classes || [];
+  const classes = teacherClassTree?.classes || [];
   const active = classes.find(course => course.units.some(unit => unit.assignments.some(item => item.id === state?.session.assignment_id)));
   const activeUnit = active?.units.find(unit => unit.assignments.some(item => item.id === state?.session.assignment_id));
   const select = (label, choices, selected, onChange) => {
@@ -514,6 +522,7 @@ function renderTeacherClassPath() {
     state.session.feedback_id = null;
     viewChanged();
     render();
+    cacheCurrentTeacherAssignment();
   };
   if (!classes.length) {
     box.append(element('span', 'muted', 'No classes yet'));
@@ -549,6 +558,7 @@ function openFolderButton() {
   return control;
 }
 async function openPathChoice(chosen) {
+  if (isLmsTeacher) return;
   if (isEvaluatedFolder(chosen) && !browserStorage) return;
   await work('Opening folder…', async () => {
     await saveNow();
@@ -891,6 +901,7 @@ function acceptFolderWorkspace(data) {
   render(); viewChanged(); scheduleEvaluatedRefresh(); scheduleSourceRefresh();
 }
 async function browseForVideo() {
+  if (isLmsTeacher) return notify('Choose a class and assignment to review server stored submissions.', true);
   await work('Choose a video folder…', async () => {
     await saveNow();
     if (browserStorage) renderTask?.controller.abort();
@@ -1884,18 +1895,40 @@ async function setupBrowserLibrary() {
 }
 
 async function loadTeacherClassTree() {
-  if (browserStorage) return;
+  if (browserStorage) {isLmsTeacher = false; return;}
   try {
     const status = await fetch('/api/auth/status').then(response => response.ok ? response.json() : null);
-    if (status?.user?.role !== 'teacher') return;
+    isLmsTeacher = status?.user?.role === 'teacher';
+    if (!isLmsTeacher) return;
     const response = await fetch('/api/lms/dashboard');
     if (response.ok) teacherClassTree = await response.json();
-  } catch (error) {console.warn('Could not load teacher class navigation:', error);}
+  } catch (error) {isLmsTeacher = false; console.warn('Could not load teacher class navigation:', error);}
+}
+function cacheCurrentTeacherAssignment() {
+  if (!isLmsTeacher || !state) return;
+  const assignmentAssets = state.submissions.filter(item => item.assignment_id === state.session.assignment_id).map(item => item.asset_id);
+  const libraryAssets = state.library.map(item => item.asset_id);
+  void storage.cacheTeacherMedia([...assignmentAssets, ...libraryAssets], (id, url) => {
+    if (selectedAsset !== id || video.src === url) return;
+    const time = video.currentTime || submission()?.position || 0;
+    const playing = !video.paused;
+    video.src = url; video.load();
+    video.addEventListener('loadedmetadata', () => {
+      video.currentTime = Math.min(time, activeDuration());
+      if (playing) video.play().catch(() => {});
+    }, {once: true});
+  });
 }
 
 async function boot() {
   try {
+    await loadTeacherClassTree();
     if (!browserStorage) for (const id of ['classes-link', 'ready-review', 'publish-review']) $(id).hidden = false;
+    if (isLmsTeacher) {
+      for (const id of ['video-folders', 'empty-import']) $(id).hidden = true;
+      $('video-import').disabled = true;
+      $('video-import').value = '';
+    }
     if (browserStorage) {
       $('server').textContent = 'Storage';
       $('library-setup').hidden = false;
@@ -1906,12 +1939,12 @@ async function boot() {
       $('library-help').textContent = 'Reviews and recordings stay on this computer. Cleanup and physical deletion require the local Python server.';
     }
     let data = await readWorkspace(); state = data.state; revision = data.revision; capabilities = data.capabilities; r2UsesLMS = !!data.r2_hierarchy;
-    await loadTeacherClassTree();
     if (browserStorage) {
       $('reconnect-folder').hidden = !(storage.folders.root && !storage.folders.folder);
       $('download-draft').hidden = !storage.pendingDraft;
     }
     restoreWindowView();
+    if (isLmsTeacher) state.session.source_folder = '';
     const requestedAssignment = new URLSearchParams(location.search).get('assignment');
     if (requestedAssignment && state.assignments.some(item => item.id === requestedAssignment)) {
       state.session.source_folder = '';
@@ -1931,7 +1964,12 @@ async function boot() {
     state.session.gamepad ||= {}; state.session.shortcuts ||= {};
     if (!currentAssignment()) state.session.assignment_id = state.assignments[0]?.id || null;
     if (!submission()) state.session.submission_id = submissions()[0]?.id || null;
+    if (isLmsTeacher) {
+      state.session.source_folder = '';
+      await storage.cacheTeacherMedia([submission()?.asset_id]);
+    }
     render(); viewChanged(); scheduleEvaluatedRefresh(); scheduleSourceRefresh(); $('save-state').textContent = 'Saved locally';
+    cacheCurrentTeacherAssignment();
     // Optional standard controller support. Actual hardware is validated by the instructor.
     new GamepadInput({dispatch: padDispatch, bindings: () => state.session.gamepad, modal: () => !!currentDialog(), capture: fresh => {
       if (!bindCapture) return false; const index = fresh.findIndex(Boolean);
@@ -2038,9 +2076,9 @@ $('speed').addEventListener('change', event => {
 // bindClick('mark-in', () => mark('in')); bindClick('mark-out', () => mark('out'));
 bindClick('add-feedback', addFeedback);
 bindClick('previous-student', () => nextStudent(-1)); bindClick('next-student', () => nextStudent(1));
-bindClick('empty-import', () => browserStorage ? browseForVideo() : $('video-import').click());
-bindClick('video-folders', browseForVideo);
-$('video-import').addEventListener('change', event => {if (event.target.files.length) importSubmissions(event.target.files); event.target.value = '';});
+bindClick('empty-import', () => {if (isLmsTeacher) return; browserStorage ? browseForVideo() : $('video-import').click();});
+bindClick('video-folders', () => {if (!isLmsTeacher) browseForVideo();});
+$('video-import').addEventListener('change', event => {if (!isLmsTeacher && event.target.files.length) importSubmissions(event.target.files); event.target.value = '';});
 bindClick('close-feedback', hideFeedback);
 for (const [id, key] of [['feedback-note', 'note'], ['private-note', 'private_note']]) {
   $(id).addEventListener('focus', () => {if (state) remember();});
