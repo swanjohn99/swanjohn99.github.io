@@ -30,6 +30,8 @@ let referenceReplace = null, libraryClipId = null;
 let toastTimer, lastPositionSave = 0, bindCapture = null, detectedPad = null, testPadKey = '';
 let padFocused = false;
 let renderTask = null;
+let r2UsesLMS = false, r2SubmissionId = null;
+const r2Uploads = new Set();
 let previewOverlays = [], previewTail = null, previewKey = '', previewWaiting = false, previewRaf = 0;
 let previewPlayback = null, previewSeeking = false;
 let folderPaths = {source: '', output: ''};
@@ -222,6 +224,8 @@ function exportCount(item) {
 function labelExportButtons() {
   if (!state) return;
   const item = submission();
+  $('upload-r2').hidden = browserStorage;
+  $('upload-r2').disabled = !item?.last_export?.filename?.toLowerCase().endsWith('.mp4') || r2Uploads.size > 0 || exportJobs.has(item?.id) || evaluatedFolderSelected();
   const exporting = !!(item && exportJobs.has(item.id));
   const exportable = canExport(item) && !item?.cleaned_at;
   const count = exportCount(item);
@@ -1836,7 +1840,7 @@ async function boot() {
       $('delete-library').title = 'Physical library deletion requires the local Python server.';
       $('library-help').textContent = 'Reviews and recordings stay on this computer. Cleanup and physical deletion require the local Python server.';
     }
-    let data = await readWorkspace(); state = data.state; revision = data.revision; capabilities = data.capabilities;
+    let data = await readWorkspace(); state = data.state; revision = data.revision; capabilities = data.capabilities; r2UsesLMS = !!data.r2_hierarchy;
     if (browserStorage) {
       $('reconnect-folder').hidden = !(storage.folders.root && !storage.folders.folder);
       $('download-draft').hidden = !storage.pendingDraft;
@@ -1896,6 +1900,32 @@ video.addEventListener('ratechange', () => syncStudentPreview(true));
 video.addEventListener('ended', () => syncStudentPreview(true));
 video.addEventListener('waiting', () => {previewWaiting = true; syncStudentPreview();});
 video.addEventListener('playing', () => {previewWaiting = false; syncStudentPreview(true);});
+bindClick('upload-r2', () => {
+  const item = submission();
+  if (!item || browserStorage) return;
+  r2SubmissionId = item.id;
+  $('r2-folder-fields').hidden = r2UsesLMS;
+  $('r2-lms-folders').hidden = !r2UsesLMS;
+  for (const input of $('r2-folder-fields').querySelectorAll('input')) input.disabled = r2UsesLMS;
+  if (!r2UsesLMS) $('r2-form').elements.assignment_name.value = currentAssignment()?.title || '';
+  $('r2-result').textContent = '';
+  openDialog('r2-dialog');
+});
+$('r2-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const id = r2SubmissionId;
+  if (!id || r2Uploads.has(id)) return;
+  r2Uploads.add(id); labelExportButtons();
+  $('r2-confirm').disabled = true;
+  $('r2-result').textContent = 'Uploading… Keep this window open.';
+  try {
+    const data = await storage.request('/api/r2/upload', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({...Object.fromEntries(new FormData(event.currentTarget)), submission_id: id, kind: 'evaluated'})});
+    $('r2-result').textContent = `Uploaded to ${data.bucket}/${data.key}`;
+    notify('Evaluated MP4 uploaded to asl-lms.');
+  } catch (error) {$('r2-result').textContent = error.message;}
+  finally {r2Uploads.delete(id); $('r2-confirm').disabled = false; labelExportButtons();}
+});
 bindClick('cancel-render', () => {renderTask?.controller.abort(); notify('Export rendering cancelled.');});
 video.addEventListener('timeupdate', () => {
   const item = feedback(); if (!studentPreviewOn() && looping && item && item.end > item.start && video.currentTime >= item.end) video.currentTime = item.start;
