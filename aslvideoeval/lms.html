@@ -7,7 +7,11 @@
   <link rel="stylesheet" href="/video-interface.css">
 </head>
 <body>
-  <header><a class="brand" href="/"><b>s.</b> still</a><nav id="nav" hidden><span id="identity"></span><button id="password-button">Change password</button><button id="logout">Sign out</button></nav></header>
+  <header class="portal-topbar">
+    <a class="brand" href="/" aria-label="Still ASL review studio"><span class="brand-mark">s.</span><span>still<span class="brand-caption">ASL REVIEW STUDIO</span></span></a>
+    <nav id="student-breadcrumb" class="student-breadcrumb" aria-label="Assignment breadcrumb" hidden></nav>
+    <nav id="nav" class="account-actions" hidden><span id="identity"></span><button id="password-button" class="quiet">Change password</button><button id="logout">Sign out</button></nav>
+  </header>
   <main>
     <section id="setup" class="card auth" hidden><p class="eyebrow">FIRST-RUN SCHOOL SETUP</p><h1>Create the school administrator</h1><p>This account manages local teachers and students. Data stays on this server.</p><form id="setup-form"><label>Name<input name="display_name" required maxlength="200"></label><label>Username<input name="username" required maxlength="100" autocomplete="username"></label><label>Password<input name="password" type="password" minlength="10" required autocomplete="new-password"></label><button>Create administrator</button></form></section>
     <section id="login" class="card auth" hidden><p class="eyebrow">STILL SCHOOL</p><h1>Sign in</h1><form id="login-form"><label>Username<input name="username" required autocomplete="username"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><button>Sign in</button></form></section>
@@ -15,19 +19,19 @@
     <section id="admin" hidden><div class="heading"><div><p class="eyebrow">ADMINISTRATION</p><h1>School accounts</h1></div><button id="add-account">Add account</button></div><div class="grid"><div class="card"><h2>Roster CSV</h2><p>Required columns: <code>username,display_name,role</code>. An optional <code>password</code> column overrides the temporary password.</p><form id="roster-form"><label>CSV file<input name="file" type="file" accept=".csv,text/csv" required></label><label>Default temporary password<input name="temporary_password" type="password" minlength="10" required></label><button>Import roster</button></form></div><div class="card wide"><h2>Users</h2><div id="users"></div></div></div></section>
     <section id="teacher" hidden><div class="heading"><div><p class="eyebrow">TEACHER</p><h1>Classes and assignments</h1></div><div class="heading-actions"><button id="import-course">Import from LMS</button><a class="button" href="/">Open review studio</a></div></div><div id="classes"></div><button id="add-class">Create class</button></section>
     <section id="student" class="student-review-shell" hidden>
-      <div class="student-topline"><div><p class="eyebrow">STUDENT REVIEW STUDIO</p><h1>Your submissions</h1></div><nav id="student-breadcrumb" class="student-breadcrumb" aria-label="Assignment breadcrumb"></nav></div>
       <div class="student-studio">
-        <aside class="student-submission-panel" aria-label="Assignment videos"><h2>Videos</h2><div id="student-submissions" class="student-submissions"></div></aside>
+        <aside class="student-submission-panel" aria-label="Assignment videos"><span class="eyebrow">YOUR SUBMISSIONS</span><h2>Videos</h2><div id="student-submissions" class="student-submissions"></div></aside>
         <section class="student-stage" aria-label="Student video">
-          <div class="student-stage-heading"><div><span class="eyebrow">YOUR ASSIGNMENT</span><h2 id="student-assignment-title">Choose an assignment</h2><p id="student-instructions" class="student-instructions"></p></div><div class="student-stage-actions"><button id="student-upload" type="button">Upload</button><span id="student-review-status" class="student-status-pill">Ready when you are</span></div></div>
+          <div class="student-stage-heading"><div><span class="eyebrow">YOUR ASSIGNMENT</span><h1 id="student-assignment-title">Choose an assignment</h1><p id="student-instructions" class="student-instructions"></p></div><div class="student-stage-actions"><button id="student-upload" class="primary" type="button">Upload</button><span id="student-review-status" class="student-status-pill">Ready when you are</span></div></div>
           <div class="student-video-fit"><div class="video-navigation"><button id="previous-student" class="video-nav-button" aria-label="Previous video" aria-keyshortcuts="[" title="Previous video ([)" disabled><span class="video-nav-arrow" aria-hidden="true">←</span><kbd>[</kbd></button><div class="video-viewport"><div id="student-video-shell" class="student-video-shell"><video id="student-video" controls playsinline preload="metadata" hidden></video><div id="student-empty" class="student-empty"><div class="student-empty-monogram">s.</div><h2>A little space to watch closely.</h2><p>Upload your assignment video, or choose an existing video from the list.</p></div></div></div><button id="next-student" class="video-nav-button" aria-label="Next video" aria-keyshortcuts="]" title="Next video (])" disabled><kbd>]</kbd><span class="video-nav-arrow" aria-hidden="true">→</span></button></div></div>
           <div class="student-transport" aria-label="Read-only review controls">
-            <div class="student-timeline-label"><span id="student-current-time">00:00</span><span>Teacher review tools are read-only</span><span id="student-duration">00:00</span></div>
+            <div class="student-timeline-label"><span id="student-current-time">00:00</span><span>Watch your submission and published feedback</span><span id="student-duration">00:00</span></div>
             <input id="student-seek" type="range" min="0" max="1" value="0" step="0.01" aria-label="Playback position" disabled>
           </div>
           <p id="student-upload-status" class="status" role="status" aria-live="polite"></p>
         </section>
       </div>
+      <footer class="student-bottom-bar"><span>Space Play/pause · [ / ] Previous / next video</span><span>Student review · your pace</span></footer>
     </section>
     <p id="message" role="status" hidden></p>
   </main>

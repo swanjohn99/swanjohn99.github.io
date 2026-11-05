@@ -13,6 +13,8 @@ const sections = ['setup', 'login', 'change-password', 'admin', 'teacher', 'stud
 function show(id) {
   sections.forEach(key => $(key).hidden = key !== id);
   $('nav').hidden = !user;
+  $('student-breadcrumb').hidden = id !== 'student';
+  document.body.classList.toggle('student-mode', id === 'student');
 }
 
 function message(text, error = false) {
