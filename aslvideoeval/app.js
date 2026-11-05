@@ -361,7 +361,12 @@ function videoListCard(item, index) {
   }
   const thumbnail = element('img');
   thumbnail.alt = '';
-  if (!item.cleaned_at) thumbnail.src = evaluatedFolderSelected() ? storage.evaluatedUrl(asset, true) : storage.thumbnailUrl(item.asset_id);
+  if (!item.cleaned_at) {
+    if (browserStorage) thumbnail.src = storage.thumbnailUrl(item.asset_id);
+    else void storage.ensureThumbnail(item.asset_id, evaluatedFolderSelected() ? asset : null).then(url => {
+      if (url && thumbnail.isConnected) thumbnail.src = url;
+    }).catch(() => {thumbnail.style.visibility = 'hidden';});
+  }
   thumbnail.loading = 'lazy';
   thumbnail.onerror = () => {thumbnail.removeAttribute('src'); thumbnail.style.visibility = 'hidden';};
   const preview = element('span', 'video-list-preview');

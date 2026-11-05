@@ -1,4 +1,5 @@
 import {parseLmsPackage} from './lms-import.js';
+import {cachedThumbnailUrl, localThumbnailUrl} from './local-thumbnails.js';
 
 const $ = id => document.getElementById(id);
 let status, user, data, selectedAssignmentId = null, selectedStudentVideoKey = null, pendingUploads = [];
@@ -98,6 +99,7 @@ async function cacheStudentMediaBlob(assetId, blob) {
   const cache = await studentMediaCache();
   await cache.put(studentMediaRequest(assetId), new Response(blob, {headers: {'Content-Type': blob.type || 'application/octet-stream'}}));
   studentMediaBlobs.set(assetId, blob);
+  void localThumbnailUrl(assetId, blob).catch(() => {});
   return blob;
 }
 
@@ -119,6 +121,14 @@ async function loadStudentMediaBlob(assetId) {
     })().finally(() => studentMediaDownloads.delete(assetId)));
   }
   return studentMediaDownloads.get(assetId);
+}
+
+async function ensureStudentThumbnail(entry) {
+  const key = entry.asset_id || `pending:${entry.pending.key}`;
+  let url = cachedThumbnailUrl(key) || await localThumbnailUrl(key);
+  if (url) return url;
+  const blob = entry.blob || await loadStudentMediaBlob(entry.asset_id);
+  return localThumbnailUrl(key, blob);
 }
 
 async function boot() {
@@ -467,7 +477,17 @@ function renderStudentSubmissions() {
     const badge = document.createElement('span');
     badge.className = entry.type === 'pending' ? 'pending' : 'status';
     badge.textContent = `${entry.label} · ${entry.status}`;
-    button.append(path, badge);
+    const thumbnail = document.createElement('img');
+    thumbnail.className = 'student-submission-thumbnail';
+    thumbnail.alt = '';
+    thumbnail.loading = 'lazy';
+    const details = document.createElement('span');
+    details.className = 'student-submission-details';
+    details.append(path, badge);
+    button.append(thumbnail, details);
+    void ensureStudentThumbnail(entry).then(url => {
+      if (url && thumbnail.isConnected) thumbnail.src = url;
+    }).catch(() => {thumbnail.style.visibility = 'hidden';});
     button.onclick = () => {
       void chooseStudentAssignment(entry.assignment, {videoKey: entry.key});
     };

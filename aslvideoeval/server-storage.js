@@ -1,3 +1,5 @@
+import {cachedThumbnailUrl, localThumbnailUrl} from './local-thumbnails.js';
+
 export class ServerStorage {
   constructor() {
     this.mode = 'server';
@@ -64,6 +66,7 @@ export class ServerStorage {
     if (prior) URL.revokeObjectURL(prior);
     const url = URL.createObjectURL(blob);
     this.mediaUrls.set(id, url);
+    void localThumbnailUrl(id, blob).catch(error => console.warn(`Could not create local thumbnail ${id}:`, error));
     return url;
   }
   async cacheTeacherMedia(ids, onCached = () => {}) {
@@ -140,7 +143,23 @@ export class ServerStorage {
     await cache.delete(evaluated.request);
     return result;
   }
-  thumbnailUrl(id) { return this.mediaUrl(id, '/thumb'); }
+  thumbnailUrl(id) { return cachedThumbnailUrl(id); }
+  async ensureThumbnail(id, asset = null) {
+    const key = asset?.evaluated_version ? `evaluated:${id}:${asset.evaluated_version}` : id;
+    const existing = cachedThumbnailUrl(key);
+    if (existing) return existing;
+    let mediaUrl;
+    if (asset?.evaluated_version) {
+      await this.cacheEvaluatedMedia(asset);
+      mediaUrl = this.evaluatedUrl(asset);
+    } else {
+      await this.cacheTeacherMedia([id]);
+      mediaUrl = this.mediaUrl(id);
+    }
+    if (!mediaUrl) return localThumbnailUrl(key);
+    const response = await fetch(mediaUrl);
+    return localThumbnailUrl(key, await response.blob());
+  }
   evaluatedUrl(asset, thumbnail = false) {
     if (thumbnail) return `/evaluated-thumbnail?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`;
     return this.mediaUrls.get(`evaluated:${asset.id}:${asset.evaluated_version}`) || '';
