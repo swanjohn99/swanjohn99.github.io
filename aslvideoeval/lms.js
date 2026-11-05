@@ -2,8 +2,10 @@ import {parseLmsPackage} from './lms-import.js';
 
 const $ = id => document.getElementById(id);
 let status, user, data, selectedAssignmentId = null, selectedStudentVideoKey = null, pendingUploads = [];
-let studentVideoUrl = null;
+let studentVideoUrl = null, studentVideoLoadToken = 0;
 let studentDBPromise;
+const studentMediaCacheName = 'still-local-media-v1';
+const studentMediaBlobs = new Map(), studentMediaDownloads = new Map();
 const sections = ['setup', 'login', 'change-password', 'admin', 'teacher', 'student'];
 
 function show(id) {
@@ -80,6 +82,43 @@ async function removePending(key) {
 
 async function requestPersistentStorage() {
   try { await navigator.storage?.persist?.(); } catch {}
+}
+
+function studentMediaRequest(assetId) {
+  return new Request(new URL(`/media/${assetId}`, location.origin));
+}
+
+async function studentMediaCache() {
+  if (!('caches' in globalThis)) throw new Error('Local video cache is unavailable in this browser.');
+  return caches.open(studentMediaCacheName);
+}
+
+async function cacheStudentMediaBlob(assetId, blob) {
+  if (!assetId || !blob) throw new Error('The local video copy is incomplete.');
+  const cache = await studentMediaCache();
+  await cache.put(studentMediaRequest(assetId), new Response(blob, {headers: {'Content-Type': blob.type || 'application/octet-stream'}}));
+  studentMediaBlobs.set(assetId, blob);
+  return blob;
+}
+
+async function loadStudentMediaBlob(assetId) {
+  if (studentMediaBlobs.has(assetId)) return studentMediaBlobs.get(assetId);
+  if (!studentMediaDownloads.has(assetId)) {
+    studentMediaDownloads.set(assetId, (async () => {
+      const request = studentMediaRequest(assetId);
+      const cache = await studentMediaCache();
+      let response = await cache.match(request);
+      if (!response) {
+        response = await fetch(request, {credentials: 'same-origin'});
+        if (!response.ok) throw new Error(`Could not download this video (${response.status}).`);
+        await cache.put(request, response.clone());
+      }
+      const blob = await response.blob();
+      studentMediaBlobs.set(assetId, blob);
+      return blob;
+    })().finally(() => studentMediaDownloads.delete(assetId)));
+  }
+  return studentMediaDownloads.get(assetId);
 }
 
 async function boot() {
@@ -269,8 +308,8 @@ function renderTeacher() {
   }));
 }
 
-function studentAssignments() {
-  return data.classes.flatMap(course => course.units.flatMap(unit => unit.assignments.map(assignment => ({
+function studentAssignmentsFrom(source) {
+  return source.classes.flatMap(course => course.units.flatMap(unit => unit.assignments.map(assignment => ({
     ...assignment,
     course_id: course.id,
     course_name: course.name,
@@ -278,6 +317,8 @@ function studentAssignments() {
     unit_title: unit.title,
   }))));
 }
+
+function studentAssignments() { return studentAssignmentsFrom(data); }
 
 function formatStudentTime(seconds) {
   if (!Number.isFinite(seconds)) return '00:00';
@@ -312,16 +353,42 @@ function studentVideoEntries(assignment) {
   if (!assignment) return [];
   const entries = [];
   const pending = pendingUploads.filter(item => item.assignment_id === assignment.id).sort((a, b) => b.updated_at - a.updated_at)[0];
-  if (pending) entries.push({key: `pending:${pending.key}`, type: 'pending', label: 'Your upload', status: 'Upload pending', source: () => URL.createObjectURL(pending.blob), pending});
+  if (pending) entries.push({key: `${assignment.id}:pending:${pending.key}`, type: 'pending', label: 'Your upload',
+    status: pending.status === 'uploaded' ? 'Submitted · local copy' : 'Upload pending', blob: pending.blob, pending, assignment});
   const submission = assignment.submission;
-  if (submission?.original_asset_id) entries.push({key: 'original', type: 'original', label: 'Your upload', status: 'Submitted', source: `/media/${submission.original_asset_id}`});
-  if (submission?.evaluated_asset_id) entries.push({key: 'evaluated', type: 'evaluated', label: 'Teacher evaluated', status: 'Evaluation complete', source: `/media/${submission.evaluated_asset_id}`});
+  if (submission?.original_asset_id) entries.push({key: `${assignment.id}:original`, type: 'original', label: 'Your upload',
+    status: 'Submitted', asset_id: submission.original_asset_id, assignment});
+  if (submission?.evaluated_asset_id) entries.push({key: `${assignment.id}:evaluated`, type: 'evaluated', label: 'Teacher evaluated',
+    status: 'Evaluation complete', asset_id: submission.evaluated_asset_id, assignment});
   return entries;
 }
 
-function chooseStudentAssignment(assignment, {renderList = true} = {}) {
+function allStudentVideoEntries() {
+  return studentAssignments().flatMap(studentVideoEntries);
+}
+
+async function showStudentVideoEntry(entry) {
+  const token = ++studentVideoLoadToken;
+  if (!entry) { updateStudentVideo(null); return; }
+  if (entry.blob) { updateStudentVideo(URL.createObjectURL(entry.blob), entry.pending?.status !== 'uploaded'); return; }
+  updateStudentVideo(null);
+  $('student-upload-status').textContent = 'Saving this video to the local cache…';
+  try {
+    const blob = await loadStudentMediaBlob(entry.asset_id);
+    if (token !== studentVideoLoadToken || selectedStudentVideoKey !== entry.key) return;
+    updateStudentVideo(URL.createObjectURL(blob));
+    $('student-upload-status').textContent = 'Playing from the local video cache.';
+  } catch (error) {
+    if (token !== studentVideoLoadToken) return;
+    updateStudentVideo(null);
+    $('student-upload-status').textContent = `This video could not be saved locally: ${error.message}`;
+  }
+}
+
+async function chooseStudentAssignment(assignment, {renderList = true, videoKey = null} = {}) {
   if (!assignment) return;
   if (selectedAssignmentId !== assignment.id) selectedStudentVideoKey = null;
+  if (videoKey) selectedStudentVideoKey = videoKey;
   selectedAssignmentId = assignment.id;
   $('student-assignment-title').textContent = assignment.title;
   $('student-instructions').textContent = assignment.instructions || '';
@@ -330,8 +397,8 @@ function chooseStudentAssignment(assignment, {renderList = true} = {}) {
   let selected = entries.find(item => item.key === selectedStudentVideoKey);
   if (!selected) selected = entries.find(item => item.type === 'evaluated') || entries[0];
   selectedStudentVideoKey = selected?.key || null;
-  updateStudentVideo(selected ? (typeof selected.source === 'function' ? selected.source() : selected.source) : null, selected?.type === 'pending');
   if (renderList) renderStudentSubmissions();
+  await showStudentVideoEntry(selected);
 }
 
 function makeBreadcrumbSelect(label, options, value, onChange) {
@@ -386,8 +453,7 @@ function renderStudentBreadcrumb() {
 
 function renderStudentSubmissions() {
   const root = $('student-submissions');
-  const assignment = studentAssignments().find(item => item.id === selectedAssignmentId);
-  const entries = studentVideoEntries(assignment);
+  const entries = allStudentVideoEntries();
   root.replaceChildren();
   for (const entry of entries) {
     const card = document.createElement('div');
@@ -396,17 +462,16 @@ function renderStudentSubmissions() {
     button.className = 'student-submission-select';
     button.setAttribute('aria-current', String(selectedStudentVideoKey === entry.key));
     const path = document.createElement('strong');
-    path.textContent = entry.label;
+    path.textContent = entry.assignment.title;
+    path.title = `${entry.assignment.course_name} / ${entry.assignment.unit_title} / ${entry.assignment.title}`;
     const badge = document.createElement('span');
     badge.className = entry.type === 'pending' ? 'pending' : 'status';
-    badge.textContent = entry.status;
+    badge.textContent = `${entry.label} · ${entry.status}`;
     button.append(path, badge);
     button.onclick = () => {
-      selectedStudentVideoKey = entry.key;
-      updateStudentVideo(typeof entry.source === 'function' ? entry.source() : entry.source, entry.type === 'pending');
-      renderStudentSubmissions();
+      void chooseStudentAssignment(entry.assignment, {videoKey: entry.key});
     };
-    if (entry.type === 'pending') {
+    if (entry.type === 'pending' && entry.pending.status !== 'uploaded') {
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'student-submission-retry';
@@ -421,7 +486,7 @@ function renderStudentSubmissions() {
     card.prepend(button);
     root.append(card);
   }
-  if (!entries.length) root.append(Object.assign(document.createElement('p'), {className: 'empty-panel', textContent: 'No videos for this assignment yet.'}));
+  if (!entries.length) root.append(Object.assign(document.createElement('p'), {className: 'empty-panel', textContent: 'No videos yet.'}));
 }
 
 async function uploadPending(pending) {
@@ -432,10 +497,11 @@ async function uploadPending(pending) {
   pendingUploads = await pendingForStudent();
   renderStudentSubmissions();
   $('student-upload-status').textContent = 'Uploading video…';
+  const uploadFile = pending.blob;
+  let uploaded;
   try {
     // Future client-side compression belongs immediately before the local save and upload stages.
-    const uploadFile = pending.blob;
-    await request('/api/student/submit', {
+    uploaded = await request('/api/student/submit', {
       method: 'POST',
       body: uploadFile,
       headers: {
@@ -444,12 +510,6 @@ async function uploadPending(pending) {
         'X-Filename': encodeURIComponent(pending.original_filename),
       },
     });
-    await removePending(pending.key);
-    pendingUploads = await pendingForStudent();
-    await refresh();
-    const submitted = studentAssignments().find(item => item.id === pending.assignment_id);
-    if (submitted) chooseStudentAssignment(submitted);
-    message('Video submitted.');
   } catch (error) {
     pending.status = 'pending';
     pending.error = error.message;
@@ -458,17 +518,47 @@ async function uploadPending(pending) {
     renderStudentSubmissions();
     $('student-upload-status').textContent = `Saved on this Chromebook. Upload failed: ${error.message}`;
     message('Video is saved on this Chromebook. Retry the upload when you are connected.', true);
+    return;
+  }
+  const uploadedAssignment = studentAssignmentsFrom(uploaded).find(item => item.id === pending.assignment_id);
+  const assetId = uploadedAssignment?.submission?.original_asset_id;
+  try {
+    await cacheStudentMediaBlob(assetId, uploadFile);
+    await removePending(pending.key);
+    pendingUploads = await pendingForStudent();
+    await refresh();
+    const submitted = studentAssignments().find(item => item.id === pending.assignment_id);
+    if (submitted) await chooseStudentAssignment(submitted);
+    message('Video submitted. A local playback copy is ready.');
+  } catch (error) {
+    pending.status = 'uploaded';
+    pending.asset_id = assetId;
+    pending.error = error.message;
+    await savePending(pending);
+    pendingUploads = await pendingForStudent();
+    data = uploaded;
+    user = uploaded.user;
+    await renderStudent();
+    $('student-upload-status').textContent = `Video submitted. The IndexedDB copy is being used because Cache Storage failed: ${error.message}`;
+    message('Video submitted; its local IndexedDB copy remains available for playback.', true);
   }
 }
 
 async function renderStudent() {
+  pendingUploads = await pendingForStudent();
+  for (const pending of pendingUploads.filter(item => item.status === 'uploaded' && item.asset_id && item.blob)) {
+    try {
+      await cacheStudentMediaBlob(pending.asset_id, pending.blob);
+      await removePending(pending.key);
+    } catch {}
+  }
   pendingUploads = await pendingForStudent();
   const assignments = studentAssignments();
   if (!assignments.some(item => item.id === selectedAssignmentId)) {
     const firstSubmitted = assignments.find(item => item.submission);
     selectedAssignmentId = firstSubmitted?.id || assignments[0]?.id || null;
   }
-  if (selectedAssignmentId) chooseStudentAssignment(assignments.find(item => item.id === selectedAssignmentId), {renderList: false});
+  if (selectedAssignmentId) await chooseStudentAssignment(assignments.find(item => item.id === selectedAssignmentId), {renderList: false});
   else {
     $('student-breadcrumb').replaceChildren();
     $('student-assignment-title').textContent = 'Choose an assignment';
@@ -507,7 +597,7 @@ $('student-video-file').onchange = async event => {
   try {
     await savePending(pending);
     pendingUploads = await pendingForStudent();
-    chooseStudentAssignment(assignment);
+    await chooseStudentAssignment(assignment);
     await uploadPending(pending);
   } catch (error) {
     message(`Could not save this video in browser storage: ${error.message}`, true);

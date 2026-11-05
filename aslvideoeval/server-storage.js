@@ -3,7 +3,7 @@ export class ServerStorage {
     this.mode = 'server';
     this.mediaUrls = new Map();
     this.mediaDownloads = new Map();
-    this.mediaCacheName = 'still-teacher-media-v1';
+    this.mediaCacheName = 'still-local-media-v1';
     this.evaluatedCacheName = 'still-evaluated-videos-v1';
     this.storagePersistence = null;
   }
@@ -24,10 +24,12 @@ export class ServerStorage {
   listFolders(path) {return this.request('/api/folders', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path})});}
   async saveAsset(file, kind, sourceFolder) {
     const result = await this.request('/api/assets', {method: 'POST', headers: {'X-Filename': encodeURIComponent(file.name || `correction.${file.type.includes('mp4') ? 'mp4' : 'webm'}`), 'X-Kind': kind, 'X-Source-Folder': encodeURIComponent(sourceFolder || '')}, body: file});
+    await this.cacheUploadedMedia(result.asset.id, file);
     return result.asset;
   }
   async trimAsset(id, start, end) {
     const result = await this.request('/api/trim', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({asset_id: id, start, end})});
+    await this.cacheTeacherMedia([result.asset.id]);
     return result.asset;
   }
   async saveExport({submissionId, filename = 'evaluated.mp4', submissionStatus, exportCount}, blob) {
@@ -46,13 +48,27 @@ export class ServerStorage {
   }
   mediaUrl(id, suffix = '') {
     if (!suffix && this.mediaUrls.has(id)) return this.mediaUrls.get(id);
-    return `/media/${id}${suffix}`;
+    return suffix ? `/media/${id}${suffix}` : '';
+  }
+  async mediaCache() {
+    if (!('caches' in globalThis)) throw new Error('Chrome local video storage is unavailable.');
+    if (!this.storagePersistence) this.storagePersistence = Promise.resolve().then(() => navigator.storage?.persist?.()).catch(() => false);
+    await this.storagePersistence;
+    return caches.open(this.mediaCacheName);
+  }
+  async cacheUploadedMedia(id, blob) {
+    const request = new Request(new URL(`/media/${id}`, location.origin));
+    const cache = await this.mediaCache();
+    await cache.put(request, new Response(blob, {headers: {'Content-Type': blob.type || 'application/octet-stream'}}));
+    const prior = this.mediaUrls.get(id);
+    if (prior) URL.revokeObjectURL(prior);
+    const url = URL.createObjectURL(blob);
+    this.mediaUrls.set(id, url);
+    return url;
   }
   async cacheTeacherMedia(ids, onCached = () => {}) {
-    if (!('caches' in globalThis) || !globalThis.navigator?.storage) return;
-    if (!this.storagePersistence) this.storagePersistence = Promise.resolve().then(() => navigator.storage.persist?.()).catch(() => false);
     let cache;
-    try {await this.storagePersistence; cache = await caches.open(this.mediaCacheName);}
+    try {cache = await this.mediaCache();}
     catch (error) {console.warn('Chrome persistent video storage is unavailable:', error); return;}
     const unique = [...new Set(ids.filter(Boolean))];
     let cursor = 0;
@@ -113,18 +129,41 @@ export class ServerStorage {
     await cache.delete(new Request(url));
   }
   async submitEvaluated(submission, evaluated) {
+    const blob = await evaluated.response.clone().blob();
     const response = await fetch('/api/teacher/submit-evaluated', {method: 'POST',
       headers: {'Content-Type': 'video/mp4', 'X-Submission-Id': submission.id,
-        'X-Filename': encodeURIComponent(evaluated.filename)}, body: await evaluated.response.clone().blob()});
+        'X-Filename': encodeURIComponent(evaluated.filename)}, body: blob});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'The evaluated video could not be submitted.');
+    await this.cacheUploadedMedia(result.asset_id, blob);
     const cache = await caches.open(this.evaluatedCacheName);
     await cache.delete(evaluated.request);
     return result;
   }
   thumbnailUrl(id) { return this.mediaUrl(id, '/thumb'); }
   evaluatedUrl(asset, thumbnail = false) {
-    return `${thumbnail ? '/evaluated-thumbnail' : '/evaluated-media'}?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`;
+    if (thumbnail) return `/evaluated-thumbnail?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`;
+    return this.mediaUrls.get(`evaluated:${asset.id}:${asset.evaluated_version}`) || '';
+  }
+  async cacheEvaluatedMedia(asset, onCached = () => {}) {
+    const key = `evaluated:${asset.id}:${asset.evaluated_version}`;
+    if (this.mediaUrls.has(key)) {onCached(this.mediaUrls.get(key)); return;}
+    if (!this.mediaDownloads.has(key)) {
+      this.mediaDownloads.set(key, (async () => {
+        const request = new Request(new URL(`/evaluated-media?path=${encodeURIComponent(asset.source_path)}&v=${encodeURIComponent(asset.evaluated_version)}`, location.origin));
+        const cache = await this.mediaCache();
+        let response = await cache.match(request);
+        if (!response) {
+          response = await fetch(request, {credentials: 'same-origin'});
+          if (!response.ok) throw new Error(`Could not download evaluated video ${asset.id} (${response.status}).`);
+          await cache.put(request, response.clone());
+        }
+        const url = URL.createObjectURL(await response.blob());
+        this.mediaUrls.set(key, url);
+        return url;
+      })().finally(() => this.mediaDownloads.delete(key)));
+    }
+    onCached(await this.mediaDownloads.get(key));
   }
   async resolveExportMedia() { return null; }
   async status() { return this.request('/api/health', {cache: 'no-store', signal: AbortSignal.timeout(5000)}); }

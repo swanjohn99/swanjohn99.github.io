@@ -608,7 +608,7 @@ function renderPlayer() {
   $('cleaned-correction').textContent = item?.correction_subtitle || '';
   $('cleaned-correction').hidden = !item?.correction_subtitle;
   $('source-note').replaceChildren();
-  if (asset?.direct_source && !item?.cleaned_at) $('source-note').append(document.createTextNode('Using the source video directly.'));
+  if (asset?.direct_source && !item?.cleaned_at) $('source-note').append(document.createTextNode('Using a cached local playback copy.'));
   if (asset?.attribution?.source_url) {
     const link = element('a', '', 'Public demo · ' + (asset.attribution.creator || 'source attribution'));
     link.href = asset.attribution.source_url; link.target = '_blank'; link.rel = 'noopener'; $('source-note').append(link);
@@ -621,8 +621,16 @@ function renderPlayer() {
     hideCorrection(); video.pause(); markedIn = markedOut = null; looping = false;
     selectedAsset = item?.asset_id || null;
     if (selectedAsset && !item.cleaned_at) {
-      video.src = asset?.evaluated_version ? storage.evaluatedUrl(asset) : storage.mediaUrl(selectedAsset);
+      const source = asset?.evaluated_version ? storage.evaluatedUrl(asset) : storage.mediaUrl(selectedAsset);
+      if (source) video.src = source;
+      else video.removeAttribute('src');
       video.load();
+      if (!source && asset?.evaluated_version && !browserStorage) {
+        void storage.cacheEvaluatedMedia(asset, url => {
+          if (selectedAsset !== asset.id) return;
+          video.src = url; video.load();
+        }).catch(error => notify(error.message, true));
+      }
     } else {video.removeAttribute('src'); video.load(); $('video-shell').style.removeProperty('--ar');}
   }
   updateTransport();
@@ -915,7 +923,7 @@ function selectSubmission(id) {
   const item = state.submissions.find(row => row.id === id); if (!item) return;
   state.session.submission_id = id; state.session.assignment_id = item.assignment_id; state.session.feedback_id = item.feedback[0]?.id || null;
   state.session.marked_in = state.session.marked_out = null;
-  selectedAsset = null; render(); viewChanged();
+  selectedAsset = null; render(); viewChanged(); cacheCurrentTeacherAssignment();
 }
 function nextStudent(direction) {const list = submissions(); if (!list.length) return; const index = list.findIndex(item => item.id === submission()?.id); selectSubmission(list[(index + direction + list.length) % list.length].id);}
 function selectFeedback(id) {state.session.feedback_id = id; if (feedback()) {seek(feedback().start, id); showFeedback(); renderSections(); renderEditor(); viewChanged();}}
@@ -977,7 +985,7 @@ function acceptFolderWorkspace(data) {
   updateFolderPaths(data); selectedAsset = null;
   for (const item of state.submissions) if (Number.isFinite(localPositions[item.id])) item.position = localPositions[item.id];
   $('save-state').textContent = 'Saved locally'; $('save-state').classList.remove('failed');
-  render(); viewChanged(); scheduleEvaluatedRefresh(); scheduleSourceRefresh();
+  render(); viewChanged(); cacheCurrentTeacherAssignment(); scheduleEvaluatedRefresh(); scheduleSourceRefresh();
 }
 async function browseForVideo() {
   if (isLmsTeacher) return notify('Choose a class and assignment to review server stored submissions.', true);
@@ -2009,8 +2017,12 @@ async function loadTeacherClassTree() {
   } catch (error) {isLmsTeacher = false; console.warn('Could not load teacher class navigation:', error);}
 }
 function cacheCurrentTeacherAssignment() {
-  if (!isLmsTeacher || !state) return;
-  const assignmentAssets = state.submissions.filter(item => item.assignment_id === state.session.assignment_id).map(item => item.asset_id);
+  if (browserStorage || !state) return;
+  const assignmentAssets = state.submissions.filter(item => item.assignment_id === state.session.assignment_id).flatMap(item => [
+    item.asset_id,
+    item.correction?.asset_id,
+    ...(item.feedback || []).flatMap(feedback => (feedback.clips || []).map(clip => clip.asset_id)),
+  ]);
   const libraryAssets = state.library.map(item => item.asset_id);
   void storage.cacheTeacherMedia([...assignmentAssets, ...libraryAssets], (id, url) => {
     if (selectedAsset !== id || video.src === url) return;
@@ -2069,10 +2081,8 @@ async function boot() {
     state.session.gamepad ||= {}; state.session.shortcuts ||= {};
     if (!currentAssignment()) state.session.assignment_id = state.assignments[0]?.id || null;
     if (!submission()) state.session.submission_id = submissions()[0]?.id || null;
-    if (isLmsTeacher) {
-      state.session.source_folder = '';
-      await storage.cacheTeacherMedia([submission()?.asset_id]);
-    }
+    if (isLmsTeacher) state.session.source_folder = '';
+    if (!browserStorage) await storage.cacheTeacherMedia([submission()?.asset_id]);
     render(); viewChanged(); scheduleEvaluatedRefresh(); scheduleSourceRefresh(); $('save-state').textContent = 'Saved locally';
     cacheCurrentTeacherAssignment();
     // Optional standard controller support. Actual hardware is validated by the instructor.
