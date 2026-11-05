@@ -171,6 +171,41 @@ function openText(action, parent, title, label, assignment = false) {
 }
 
 $('add-class').onclick = () => openText('class', '', 'Create class', 'Class name');
+$('import-course').onclick = () => {
+  $('import-form').reset();
+  $('import-status').textContent = '';
+  $('import-dialog').showModal();
+};
+$('import-form').onsubmit = async event => {
+  event.preventDefault();
+  const file = $('import-file').files?.[0];
+  if (!file) return;
+  if (file.size > 256 * 1024 * 1024) {
+    message('The LMS export is larger than the 256 MB import limit.', true);
+    return;
+  }
+  const submit = $('import-submit');
+  submit.disabled = true;
+  submit.textContent = 'Importing…';
+  $('import-status').textContent = `Reading ${file.name}…`;
+  try {
+    const result = await request('/api/teacher/import-course-package', {
+      method: 'POST',
+      body: file,
+      headers: {'X-Filename': encodeURIComponent(file.name)},
+    });
+    $('import-dialog').close();
+    await refresh();
+    const summary = `Imported ${result.classes} class${result.classes === 1 ? '' : 'es'}, ${result.units} unit${result.units === 1 ? '' : 's'}, and ${result.assignments} assignment${result.assignments === 1 ? '' : 's'} from ${result.format}.`;
+    message(summary);
+  } catch (error) {
+    $('import-status').textContent = error.message;
+    message(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'Import courses';
+  }
+};
 $('text-form').onsubmit = async event => {
   event.preventDefault();
   const values = fields(event.currentTarget);
