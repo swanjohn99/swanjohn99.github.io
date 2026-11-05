@@ -30,9 +30,19 @@ export class ServerStorage {
     const result = await this.request('/api/trim', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({asset_id: id, start, end})});
     return result.asset;
   }
-  async saveExport({submissionId, sourceFolder, revision}, blob) {
-    return this.request('/api/export/rendered?submission_id=' + encodeURIComponent(submissionId) + '&source_folder=' + encodeURIComponent(sourceFolder || ''),
-      {method: 'POST', headers: {'Content-Type': 'video/mp4', 'X-Revision': String(revision)}, body: blob});
+  async saveExport({submissionId, filename = 'evaluated.mp4', submissionStatus, exportCount}, blob) {
+    if (!('caches' in globalThis)) throw new Error('Chrome local storage is unavailable. Open the teacher studio in current Chrome or Edge.');
+    if (!this.storagePersistence) this.storagePersistence = Promise.resolve().then(() => navigator.storage?.persist?.()).catch(() => false);
+    await this.storagePersistence;
+    const exportId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const cacheUrl = new URL(`/browser-exports/${encodeURIComponent(submissionId)}/${encodeURIComponent(exportId)}/${encodeURIComponent(filename)}`, location.origin);
+    const request = new Request(cacheUrl);
+    const cache = await caches.open(this.evaluatedCacheName);
+    await cache.put(request, new Response(blob, {headers: {'Content-Type': 'video/mp4', 'Content-Length': String(blob.size)}}));
+    const lastExport = {id: exportId, time: Date.now() / 1000, filename, storage: 'chrome', cache_url: request.url};
+    return {filename, saved_directory: 'Chrome local storage', submission_id: submissionId,
+      last_export: lastExport, submission_status: submissionStatus,
+      export_count: exportCount, cache_request: request.url};
   }
   mediaUrl(id, suffix = '') {
     if (!suffix && this.mediaUrls.has(id)) return this.mediaUrls.get(id);
@@ -81,15 +91,26 @@ export class ServerStorage {
   async evaluatedExport(submission) {
     if (!submission?.last_export?.filename) throw new Error('Export this review before submitting it.');
     const filename = submission.last_export.filename;
-    const request = new Request(new URL('/exports/' + encodeURIComponent(filename) + '?evaluated=' + encodeURIComponent(submission.last_export.id || submission.last_export.time || ''), location.origin));
+    const browserExport = submission.last_export.storage === 'chrome';
+    if (browserExport && !submission.last_export.cache_url) throw new Error('This evaluated video is no longer available in Chrome local storage. Export it again.');
+    const request = new Request(browserExport
+      ? submission.last_export.cache_url
+      : new URL('/exports/' + encodeURIComponent(filename) + '?evaluated=' + encodeURIComponent(submission.last_export.id || submission.last_export.time || ''), location.origin));
     const cache = await caches.open(this.evaluatedCacheName);
     let response = await cache.match(request);
-    if (!response) {
+    if (!response && !browserExport) {
       response = await fetch(request, {credentials: 'same-origin'});
       if (!response.ok) throw new Error('Could not load the evaluated video from this review.');
       await cache.put(request, response.clone());
     }
+    if (!response) throw new Error('This evaluated video is no longer available in Chrome local storage. Export it again.');
     return {request, response, filename};
+  }
+  async discardExport(result) {
+    const url = result?.cache_request || (result?.last_export?.storage === 'chrome' && result.last_export.cache_url);
+    if (!url || !('caches' in globalThis)) return;
+    const cache = await caches.open(this.evaluatedCacheName);
+    await cache.delete(new Request(url));
   }
   async submitEvaluated(submission, evaluated) {
     const response = await fetch('/api/teacher/submit-evaluated', {method: 'POST',

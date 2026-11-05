@@ -1,5 +1,7 @@
+import {parseLmsPackage} from './lms-import.js';
+
 const $ = id => document.getElementById(id);
-let status, user, data, selectedAssignmentId = null, pendingUploads = [];
+let status, user, data, selectedAssignmentId = null, selectedStudentVideoKey = null, pendingUploads = [];
 let studentVideoUrl = null;
 let studentDBPromise;
 const sections = ['setup', 'login', 'change-password', 'admin', 'teacher', 'student'];
@@ -187,12 +189,15 @@ $('import-form').onsubmit = async event => {
   const submit = $('import-submit');
   submit.disabled = true;
   submit.textContent = 'Importing…';
-  $('import-status').textContent = `Reading ${file.name}…`;
+  $('import-status').textContent = `Opening ${file.name} locally…`;
   try {
+    const imported = await parseLmsPackage(file, text => { $('import-status').textContent = text; });
+    $('import-status').textContent = 'Uploading the class structure…';
+    const payload = JSON.stringify(imported);
+    if (new Blob([payload]).size > 32 * 1024 * 1024) throw new Error('The extracted course structure is too large to upload at once. Import smaller course packages.');
     const result = await request('/api/teacher/import-course-package', {
       method: 'POST',
-      body: file,
-      headers: {'X-Filename': encodeURIComponent(file.name)},
+      body: payload,
     });
     $('import-dialog').close();
     await refresh();
@@ -274,8 +279,10 @@ function studentAssignments() {
   }))));
 }
 
-function breadcrumbText(assignment) {
-  return `${assignment.course_name} / ${assignment.unit_title} / ${assignment.title}`;
+function formatStudentTime(seconds) {
+  if (!Number.isFinite(seconds)) return '00:00';
+  const value = Math.max(0, Math.floor(seconds));
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 }
 
 function updateStudentVideo(source, pending = false) {
@@ -296,17 +303,34 @@ function updateStudentVideo(source, pending = false) {
     empty.hidden = false;
     $('student-upload-status').textContent = '';
   }
+  $('student-current-time').textContent = '00:00';
+  $('student-duration').textContent = '00:00';
+  $('student-seek').value = 0;
+}
+
+function studentVideoEntries(assignment) {
+  if (!assignment) return [];
+  const entries = [];
+  const pending = pendingUploads.filter(item => item.assignment_id === assignment.id).sort((a, b) => b.updated_at - a.updated_at)[0];
+  if (pending) entries.push({key: `pending:${pending.key}`, type: 'pending', label: 'Your upload', status: 'Upload pending', source: () => URL.createObjectURL(pending.blob), pending});
+  const submission = assignment.submission;
+  if (submission?.original_asset_id) entries.push({key: 'original', type: 'original', label: 'Your upload', status: 'Submitted', source: `/media/${submission.original_asset_id}`});
+  if (submission?.evaluated_asset_id) entries.push({key: 'evaluated', type: 'evaluated', label: 'Teacher evaluated', status: 'Evaluation complete', source: `/media/${submission.evaluated_asset_id}`});
+  return entries;
 }
 
 function chooseStudentAssignment(assignment, {renderList = true} = {}) {
   if (!assignment) return;
+  if (selectedAssignmentId !== assignment.id) selectedStudentVideoKey = null;
   selectedAssignmentId = assignment.id;
+  $('student-assignment-title').textContent = assignment.title;
   $('student-instructions').textContent = assignment.instructions || '';
   renderStudentBreadcrumb();
-  const pending = pendingUploads.filter(item => item.assignment_id === assignment.id).sort((a, b) => b.updated_at - a.updated_at)[0];
-  if (pending) updateStudentVideo(URL.createObjectURL(pending.blob), true);
-  else if (assignment.submission?.asset_id) updateStudentVideo(`/media/${assignment.submission.asset_id}`);
-  else updateStudentVideo(null);
+  const entries = studentVideoEntries(assignment);
+  let selected = entries.find(item => item.key === selectedStudentVideoKey);
+  if (!selected) selected = entries.find(item => item.type === 'evaluated') || entries[0];
+  selectedStudentVideoKey = selected?.key || null;
+  updateStudentVideo(selected ? (typeof selected.source === 'function' ? selected.source() : selected.source) : null, selected?.type === 'pending');
   if (renderList) renderStudentSubmissions();
 }
 
@@ -350,44 +374,36 @@ function renderStudentBreadcrumb() {
     const next = assignments.find(item => item.id === id);
     if (next) chooseStudentAssignment(next);
   }));
-  const upload = document.createElement('button');
-  upload.className = 'primary';
-  upload.textContent = selected.submission?.locked ? 'Submission closed' : 'Upload';
-  upload.disabled = !!selected.submission?.locked;
-  upload.title = selected.submission?.locked ? 'This assignment has already been evaluated.' : '';
-  upload.onclick = () => $('student-video-file').click();
-  root.append(upload);
+  const evaluated = !!selected.submission?.evaluated_asset_id;
+  const closed = evaluated || !!selected.submission?.locked;
+  const upload = $('student-upload');
+  upload.textContent = closed ? 'Upload closed' : 'Upload';
+  upload.disabled = closed;
+  upload.title = upload.disabled ? 'This assignment is closed for uploads.' : 'Upload or replace your assignment video.';
+  $('student-review-status').textContent = evaluated ? 'Evaluation complete' : closed ? 'Submission closed' : selected.submission ? 'Submitted' : 'Ready when you are';
+  $('student-review-status').classList.toggle('evaluated', evaluated);
 }
 
 function renderStudentSubmissions() {
   const root = $('student-submissions');
-  const assignments = studentAssignments();
-  const entries = [];
-  for (const assignment of assignments) {
-    if (assignment.submission) entries.push({assignment, type: 'submitted', key: `server:${assignment.id}`});
-  }
-  for (const pending of pendingUploads) {
-    const assignment = assignments.find(item => item.id === pending.assignment_id);
-    if (assignment) entries.push({assignment, type: 'pending', pending, key: pending.key});
-  }
-  entries.sort((a, b) => assignments.indexOf(a.assignment) - assignments.indexOf(b.assignment) || (a.type === 'pending' ? -1 : 1));
+  const assignment = studentAssignments().find(item => item.id === selectedAssignmentId);
+  const entries = studentVideoEntries(assignment);
   root.replaceChildren();
   for (const entry of entries) {
     const card = document.createElement('div');
     card.className = 'student-submission';
     const button = document.createElement('button');
     button.className = 'student-submission-select';
-    button.setAttribute('aria-current', String(selectedAssignmentId === entry.assignment.id && entry.type !== 'pending'));
+    button.setAttribute('aria-current', String(selectedStudentVideoKey === entry.key));
     const path = document.createElement('strong');
-    path.textContent = breadcrumbText(entry.assignment);
+    path.textContent = entry.label;
     const badge = document.createElement('span');
     badge.className = entry.type === 'pending' ? 'pending' : 'status';
-    badge.textContent = entry.type === 'pending' ? 'Upload pending' : 'Submitted';
+    badge.textContent = entry.status;
     button.append(path, badge);
     button.onclick = () => {
-      chooseStudentAssignment(entry.assignment, {renderList: false});
-      if (entry.type === 'pending') updateStudentVideo(URL.createObjectURL(entry.pending.blob), true);
-      else updateStudentVideo(`/media/${entry.assignment.submission.asset_id}`);
+      selectedStudentVideoKey = entry.key;
+      updateStudentVideo(typeof entry.source === 'function' ? entry.source() : entry.source, entry.type === 'pending');
       renderStudentSubmissions();
     };
     if (entry.type === 'pending') {
@@ -405,7 +421,7 @@ function renderStudentSubmissions() {
     card.prepend(button);
     root.append(card);
   }
-  if (!entries.length) root.append(Object.assign(document.createElement('p'), {className: 'empty-panel', textContent: 'No submissions yet.'}));
+  if (!entries.length) root.append(Object.assign(document.createElement('p'), {className: 'empty-panel', textContent: 'No videos for this assignment yet.'}));
 }
 
 async function uploadPending(pending) {
@@ -455,19 +471,25 @@ async function renderStudent() {
   if (selectedAssignmentId) chooseStudentAssignment(assignments.find(item => item.id === selectedAssignmentId), {renderList: false});
   else {
     $('student-breadcrumb').replaceChildren();
+    $('student-assignment-title').textContent = 'Choose an assignment';
     $('student-instructions').textContent = '';
+    $('student-upload').disabled = true;
+    $('student-upload').title = 'Choose an assignment first.';
+    $('student-review-status').textContent = 'No assignment selected';
+    $('student-review-status').classList.remove('evaluated');
     updateStudentVideo(null);
   }
   renderStudentSubmissions();
 }
 
+$('student-upload').onclick = () => $('student-video-file').click();
 $('student-video-file').onchange = async event => {
   const file = event.currentTarget.files?.[0];
   event.currentTarget.value = '';
   if (!file || !selectedAssignmentId) return;
   const assignment = studentAssignments().find(item => item.id === selectedAssignmentId);
   if (!assignment) return;
-  if (assignment.submission?.locked) { message('This assignment is closed for video submissions.', true); return; }
+  if (assignment.submission?.evaluated_asset_id || assignment.submission?.locked) { message('This assignment already has an evaluated video and is closed for uploads.', true); return; }
   const existingPending = pendingUploads.find(item => item.assignment_id === assignment.id);
   if ((assignment.submission || existingPending) && !confirm('Replace your existing video submission? A successful upload clears its previous teacher feedback.')) return;
   const extension = file.name.includes('.') ? file.name.split('.').pop() : 'mp4';
@@ -491,6 +513,16 @@ $('student-video-file').onchange = async event => {
     message(`Could not save this video in browser storage: ${error.message}`, true);
   }
 };
+
+$('student-video').addEventListener('loadedmetadata', event => {
+  $('student-duration').textContent = formatStudentTime(event.currentTarget.duration);
+});
+$('student-video').addEventListener('timeupdate', event => {
+  const video = event.currentTarget;
+  $('student-current-time').textContent = formatStudentTime(video.currentTime);
+  $('student-duration').textContent = formatStudentTime(video.duration);
+  $('student-seek').value = Number.isFinite(video.duration) && video.duration > 0 ? video.currentTime / video.duration : 0;
+});
 
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));

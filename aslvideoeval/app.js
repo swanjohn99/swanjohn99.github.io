@@ -229,7 +229,14 @@ function shortcutLetter(name) {
   return (state?.session.shortcuts?.[name] || DEFAULT_KEYS[name] || '').toUpperCase();
 }
 function exportCount(item) {
-  return Number.isInteger(item?.evaluated_export_count) && item.evaluated_export_count > 0 ? item.evaluated_export_count : 0;
+  if (Number.isInteger(item?.evaluated_export_count) && item.evaluated_export_count > 0) return item.evaluated_export_count;
+  return Number.isInteger(item?.export_count) && item.export_count > 0 ? item.export_count : 0;
+}
+function exportFilename(item) {
+  const asset = assets.get(item?.asset_id);
+  const original = String(asset?.filename || asset?.name || item?.name || 'evaluated').split(/[\\/]/).at(-1);
+  const stem = original.replace(/\.[^.]*$/, '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/[. ]+$/, '').slice(0, 220) || 'evaluated';
+  return `${stem}.mp4`;
 }
 function labelExportButtons() {
   if (!state) return;
@@ -829,7 +836,7 @@ async function renderSubmissionView() {
     const status = element('span', 'submission-row-status', item.submission_locked ? 'Submitted · uploads locked' : item.last_export?.filename ? 'Evaluated video ready' : 'Waiting for export');
     const action = button('Submit', () => submitEvaluated(item, action), 'primary small');
     action.disabled = !item.last_export?.filename?.toLowerCase().endsWith('.mp4') || !!item.submission_locked || submittingEvaluated.has(item.id);
-    action.title = item.submission_locked ? 'An evaluated video has already been submitted.' : item.last_export?.filename ? 'Replace the student video with the evaluated MP4.' : 'Export this review first.';
+    action.title = item.submission_locked ? 'An evaluated video has already been submitted.' : item.last_export?.filename ? 'Send the evaluated MP4 while preserving the student’s original upload.' : 'Export this review first.';
     buttons.push(action);
     row.append(details, status, action); root.append(row);
     if (item.last_export?.filename && !item.submission_locked) {
@@ -1583,9 +1590,34 @@ async function exportFeedback() {
     const composition = await currentComposition(item);
     notify('Export started. Rendering video in this browser.');
     const result = await renderExportVideo(composition);
-    if (browserStorage && (revision !== snapshotRevision || editCount !== snapshotEdits)) throw new Error('The review changed during rendering. Export again.');
-    const data = await storage.saveExport({submissionId: item.id, sourceFolder: folder, revision: snapshotRevision}, result.blob);
-    await applyFinishedExport(item.id, data);
+    if (revision !== snapshotRevision || editCount !== snapshotEdits) throw new Error('The review changed during rendering. Export again.');
+    const exportOptions = {submissionId: item.id, sourceFolder: folder, revision: snapshotRevision,
+      filename: exportFilename(item), exportCount: exportCount(item) + 1,
+      submissionStatus: item.feedback.every(row => row.note?.trim() || row.clips?.length) ? 'Exported' : 'In progress'};
+    const previousExport = item.last_export;
+    const data = await storage.saveExport(exportOptions, result.blob);
+    if (browserStorage) await applyFinishedExport(item.id, data);
+    else {
+      try {
+        if (revision !== snapshotRevision || editCount !== snapshotEdits) throw new Error('The review changed while saving the export. Export again.');
+        const exportedState = clone(state);
+        const exported = exportedState.submissions.find(row => row.id === item.id);
+        if (!exported) throw new Error('The review is no longer available.');
+        exported.last_export = data.last_export;
+        exported.export_count = data.export_count;
+        exported.status = data.submission_status;
+        const saved = await storage.saveWorkspace(exportedState, snapshotRevision);
+        state = exportedState;
+        revision = saved.revision;
+        $('save-state').textContent = 'Saved locally';
+        $('save-state').classList.remove('failed');
+      } catch (error) {
+        await storage.discardExport(data).catch(() => {});
+        throw error;
+      }
+      await storage.discardExport({last_export: previousExport}).catch(() => {});
+      render();
+    }
     const drafts = item.feedback.filter(row => !row.note.trim() && !row.clips.length).length;
     notify(`${data.filename} exported. Saved in ${data.saved_directory}.${drafts ? ' Empty drafts remain saved for later.' : ''}`);
   } catch (error) {if (error.name !== 'AbortError') notify(error.message, true);}
