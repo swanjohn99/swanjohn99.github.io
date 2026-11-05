@@ -17,6 +17,7 @@ const dialogs = [...document.querySelectorAll('dialog')];
 let showingCorrection = false;
 let state, revision = 0, assets = new Map(), capabilities = {}, history = [];
 let teacherClassTree = null, isLmsTeacher = false;
+let submissionMode = false, submissionRenderToken = 0;
 let selectedAsset = null, markedIn = null, markedOut = null, looping = false;
 let editCount = 0, savedCount = 0, saveTimer, saving = null, busy = false;
 let libraryFilter = 'recent', libraryTags = new Set(), libraryTarget = 'correction', previewEntry = null, editEntryId = null, newEntryAsset = null;
@@ -774,7 +775,78 @@ function alignSubmissionToFolder() {
   selectedAsset = null; markedIn = markedOut = null; looping = false;
   viewChanged();
 }
-function render() {syncEvaluatedControls(); if (keepOneSectionClip(state)) dirty(); alignSubmissionToFolder(); applyPreferences(); renderProgress(); renderPlayer(); renderSections(); renderEditor(); updateHint(); syncEvaluatedControls();}
+function render() {
+  syncEvaluatedControls();
+  if (keepOneSectionClip(state)) dirty();
+  alignSubmissionToFolder(); applyPreferences();
+  if (submissionMode && isLmsTeacher) { renderSubmissionView(); updateHint(); return; }
+  $('submission-view').hidden = true;
+  $('video-list-panel').hidden = false; $('review-stage').hidden = false;
+  renderProgress(); renderPlayer(); renderSections(); renderEditor(); updateHint(); syncEvaluatedControls();
+}
+function setSubmissionMode(enabled) {
+  if (!isLmsTeacher) return;
+  submissionMode = enabled;
+  $('submission-mode').textContent = enabled ? 'Review' : 'Submission';
+  $('submission-mode').setAttribute('aria-pressed', String(enabled));
+  render();
+}
+async function submitEvaluated(item, button) {
+  if (!item?.last_export?.filename || submittingEvaluated.has(item.id)) return;
+  submittingEvaluated.add(item.id); button.disabled = true; button.textContent = 'Submitting…';
+  try {
+    await saveNow();
+    const evaluated = await storage.evaluatedExport(item);
+    await storage.submitEvaluated(item, evaluated);
+    const data = await storage.loadWorkspace();
+    applyWorkspace({...data, r2_hierarchy: true});
+    submissionMode = true;
+    notify(`${evaluated.filename} submitted. Student uploads are now locked for this assignment.`);
+    renderSubmissionView();
+  } catch (error) {notify(error.message, true); button.disabled = false; button.textContent = 'Submit';}
+  finally {submittingEvaluated.delete(item.id);}
+}
+const submittingEvaluated = new Set();
+async function renderSubmissionView() {
+  $('submission-view').hidden = false;
+  $('video-list-panel').hidden = true; $('review-stage').hidden = true;
+  $('submit-all').disabled = true;
+  const token = ++submissionRenderToken;
+  const assignment = currentAssignment();
+  const active = teacherClassTree?.classes?.flatMap(course => course.units.flatMap(unit => unit.assignments.map(row => ({course, unit, assignment: row}))))
+    .find(entry => entry.assignment.id === assignment?.id);
+  $('submission-view-breadcrumb').textContent = active ? `${active.course.name} / ${active.unit.title} / ${assignment.title}` : (assignment?.title || 'Choose an assignment');
+  const root = $('submission-view-list'); root.replaceChildren();
+  const cached = new Set();
+  const items = state.submissions.filter(item => item.assignment_id === assignment?.id)
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, {numeric: true, sensitivity: 'base'}));
+  if (!items.length) root.append(element('p', 'muted', 'No student submissions for this assignment.'));
+  const buttons = [];
+  for (const item of items) {
+    const row = element('article', 'submission-row');
+    const details = element('div', 'submission-row-details');
+    details.append(element('strong', '', item.name), element('span', 'muted', item.last_export?.filename || 'No evaluated MP4 exported yet'));
+    const status = element('span', 'submission-row-status', item.submission_locked ? 'Submitted · uploads locked' : item.last_export?.filename ? 'Evaluated video ready' : 'Waiting for export');
+    const action = button('Submit', () => submitEvaluated(item, action), 'primary small');
+    action.disabled = !item.last_export?.filename?.toLowerCase().endsWith('.mp4') || !!item.submission_locked || submittingEvaluated.has(item.id);
+    action.title = item.submission_locked ? 'An evaluated video has already been submitted.' : item.last_export?.filename ? 'Replace the student video with the evaluated MP4.' : 'Export this review first.';
+    buttons.push(action);
+    row.append(details, status, action); root.append(row);
+    if (item.last_export?.filename && !item.submission_locked) {
+      status.textContent = 'Checking evaluated cache…';
+      try {await storage.evaluatedExport(item); if (token !== submissionRenderToken) return; cached.add(item.id); status.textContent = 'Evaluated video ready in Chrome cache';}
+      catch (error) {if (token !== submissionRenderToken) return; status.textContent = error.message; action.disabled = true;}
+    }
+  }
+  $('submit-all').disabled = !items.some(item => cached.has(item.id) && !item.submission_locked) || submittingEvaluated.size > 0;
+  $('submit-all').onclick = async () => {
+    const ready = items.filter(item => cached.has(item.id) && !item.submission_locked && !submittingEvaluated.has(item.id));
+    for (const item of ready) {
+      const action = buttons[items.indexOf(item)];
+      await submitEvaluated(item, action);
+    }
+  };
+}
 function showFeedback() {$('feedback-panel').hidden = false; document.querySelector('.workspace').classList.add('with-feedback'); renderEditor(); requestAnimationFrame(fitSofa);}
 function hideFeedback() {$('feedback-panel').hidden = true; document.querySelector('.workspace').classList.remove('with-feedback'); requestAnimationFrame(fitSofa);}
 function studentPosition() {return Math.max(0, video.readyState >= 1 ? video.currentTime : submission()?.position || 0);}
@@ -1925,6 +1997,7 @@ async function boot() {
     await loadTeacherClassTree();
     if (!browserStorage) for (const id of ['classes-link', 'ready-review', 'publish-review']) $(id).hidden = false;
     if (isLmsTeacher) {
+      $('submission-mode').hidden = false;
       for (const id of ['video-folders', 'empty-import']) $(id).hidden = true;
       $('video-import').disabled = true;
       $('video-import').value = '';
@@ -1984,6 +2057,8 @@ async function boot() {
 
 dialogs.forEach(dialog => {dialog.querySelectorAll('[data-close]').forEach(node => node.addEventListener('click', () => closeDialog(dialog))); dialog.addEventListener('close', updateHint); dialog.addEventListener('cancel', event => {if (busy) {event.preventDefault(); return;} if (dialog === $('recorder-dialog')) {event.preventDefault(); cancelRecorder();}});});
 bindClick('play', playPause); bindClick('back', () => stepVideo(-.1)); bindClick('forward', () => stepVideo(.1));
+bindClick('submission-mode', () => setSubmissionMode(!submissionMode));
+bindClick('submission-review', () => setSubmissionMode(false));
 bindClick('ready-review', () => {if (!canExport(submission())) {notify('Add a correction clip or written note before marking the review ready.', true); return;} remember(); submission().status = 'Ready'; dirty(); renderPlayer(); notify('Review marked ready. Publish it when the student should see the feedback.');});
 bindClick('publish-review', async () => {if (!submission()) return; try {await saveNow(); await storage.request('/api/teacher/publish', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({submission_id:submission().id})}); submission().published = true; renderPlayer(); notify('Feedback published to the student.');} catch (error) {notify(error.message, true);}});
 $('seek').addEventListener('input', event => {

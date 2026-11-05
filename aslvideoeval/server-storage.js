@@ -4,6 +4,7 @@ export class ServerStorage {
     this.mediaUrls = new Map();
     this.mediaDownloads = new Map();
     this.mediaCacheName = 'still-teacher-media-v1';
+    this.evaluatedCacheName = 'still-evaluated-videos-v1';
     this.storagePersistence = null;
   }
   async request(path, options = {}) {
@@ -76,6 +77,29 @@ export class ServerStorage {
       }
     };
     await Promise.all([worker(), worker()]);
+  }
+  async evaluatedExport(submission) {
+    if (!submission?.last_export?.filename) throw new Error('Export this review before submitting it.');
+    const filename = submission.last_export.filename;
+    const request = new Request(new URL('/exports/' + encodeURIComponent(filename) + '?evaluated=' + encodeURIComponent(submission.last_export.id || submission.last_export.time || ''), location.origin));
+    const cache = await caches.open(this.evaluatedCacheName);
+    let response = await cache.match(request);
+    if (!response) {
+      response = await fetch(request, {credentials: 'same-origin'});
+      if (!response.ok) throw new Error('Could not load the evaluated video from this review.');
+      await cache.put(request, response.clone());
+    }
+    return {request, response, filename};
+  }
+  async submitEvaluated(submission, evaluated) {
+    const response = await fetch('/api/teacher/submit-evaluated', {method: 'POST',
+      headers: {'Content-Type': 'video/mp4', 'X-Submission-Id': submission.id,
+        'X-Filename': encodeURIComponent(evaluated.filename)}, body: await evaluated.response.clone().blob()});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'The evaluated video could not be submitted.');
+    const cache = await caches.open(this.evaluatedCacheName);
+    await cache.delete(evaluated.request);
+    return result;
   }
   thumbnailUrl(id) { return this.mediaUrl(id, '/thumb'); }
   evaluatedUrl(asset, thumbnail = false) {
