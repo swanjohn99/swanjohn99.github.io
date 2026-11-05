@@ -1,4 +1,5 @@
 import {uid, clone, clock, normalize, makeFeedback, feedbackTimestamp, studentPreviewTimeline, previewSectionAt, previewStudentTime, previewOutputTime, keepOneSectionClip, searchClips, canExport, visibleInSelectedFolder, isEvaluatedFolder, pathUnderVideo, DEFAULT_PAD, DEFAULT_KEYS} from './core.js';
+import {configureVideoInterface} from './video-interface.js';
 import {GamepadInput} from './gamepad.js';
 import {videoComposition} from './video-composition.js';
 import {renderVideo} from './video-renderer.js';
@@ -931,6 +932,7 @@ function selectSubmission(id) {
   selectedAsset = null; render(); viewChanged(); cacheCurrentTeacherAssignment();
 }
 function nextStudent(direction) {const list = submissions(); if (!list.length) return; const index = list.findIndex(item => item.id === submission()?.id); selectSubmission(list[(index + direction + list.length) % list.length].id);}
+configureVideoInterface({mode: 'teacher', previousButton: $('previous-student'), nextButton: $('next-student'), onNavigate: nextStudent, canUseShortcut: event => !busy && !!state && !currentDialog() && !event.target.closest('.teacher-overlay')});
 function selectFeedback(id) {state.session.feedback_id = id; if (feedback()) {seek(feedback().start, id); showFeedback(); renderSections(); renderEditor(); viewChanged();}}
 function nextFeedback(direction) {const list = [...(submission()?.feedback || [])].sort((a, b) => a.start - b.start); if (!list.length) return; const index = list.findIndex(item => item.id === feedback()?.id); selectFeedback(list[(index + direction + list.length) % list.length].id);}
 function mark(which) {
@@ -2197,7 +2199,6 @@ $('speed').addEventListener('change', event => {
 // Mark range buttons temporarily disabled.
 // bindClick('mark-in', () => mark('in')); bindClick('mark-out', () => mark('out'));
 bindClick('add-feedback', addFeedback);
-bindClick('previous-student', () => nextStudent(-1)); bindClick('next-student', () => nextStudent(1));
 bindClick('empty-import', () => {if (isLmsTeacher) return; browserStorage ? browseForVideo() : $('video-import').click();});
 bindClick('video-folders', () => {if (!isLmsTeacher) browseForVideo();});
 $('video-import').addEventListener('change', event => {if (!isLmsTeacher && event.target.files.length) importSubmissions(event.target.files); event.target.value = '';});
@@ -2294,11 +2295,11 @@ document.addEventListener('keydown', event => {
   if (event.key === ' ' && event.target.closest('button')) return;
   const keys = {...DEFAULT_KEYS, ...state.session.shortcuts}, key = event.key.toLowerCase();
   if (evaluatedFolderSelected()) {
-    const playback = {'[': () => nextStudent(-1), ']': () => nextStudent(1), ' ': playPause, arrowleft: () => stepVideo(-(event.shiftKey ? 1 : .1)), arrowright: () => stepVideo(event.shiftKey ? 1 : .1), [keys.browseVideos]: browseForVideo};
+    const playback = {' ': playPause, arrowleft: () => stepVideo(-(event.shiftKey ? 1 : .1)), arrowright: () => stepVideo(event.shiftKey ? 1 : .1), [keys.browseVideos]: browseForVideo};
     if (playback[key]) {event.preventDefault(); if (!event.repeat || ['arrowleft', 'arrowright'].includes(key)) playback[key]();}
     return;
   }
-  const handlers = {'[': () => nextStudent(-1), ']': () => nextStudent(1), ' ': playPause, arrowleft: () => stepVideo(-(event.shiftKey ? 1 : .1)), arrowright: () => stepVideo(event.shiftKey ? 1 : .1), /* [keys.markIn]: () => mark('in'), [keys.markOut]: () => mark('out'), */ [keys.feedback]: addFeedback, [keys.record]: () => openRecorder('section'), [keys.library]: () => openLibrary(true, 'section'), [keys.previous]: () => nextFeedback(-1), [keys.next]: () => nextFeedback(1), [keys.browseVideos]: browseForVideo, [keys.exportFeedback]: exportFeedback};
+  const handlers = {' ': playPause, arrowleft: () => stepVideo(-(event.shiftKey ? 1 : .1)), arrowright: () => stepVideo(event.shiftKey ? 1 : .1), /* [keys.markIn]: () => mark('in'), [keys.markOut]: () => mark('out'), */ [keys.feedback]: addFeedback, [keys.record]: () => openRecorder('section'), [keys.library]: () => openLibrary(true, 'section'), [keys.previous]: () => nextFeedback(-1), [keys.next]: () => nextFeedback(1), [keys.browseVideos]: browseForVideo, [keys.exportFeedback]: exportFeedback};
   if (handlers[key]) {event.preventDefault(); if (!event.repeat || ['arrowleft', 'arrowright'].includes(key)) handlers[key]();}
 });
 window.addEventListener('blur', () => {pausePreview(); correctionVideo.pause();});

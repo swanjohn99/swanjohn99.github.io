@@ -1,5 +1,6 @@
 import {parseLmsPackage} from './lms-import.js';
 import {cachedThumbnailUrl, localThumbnailUrl} from './local-thumbnails.js';
+import {configureVideoInterface} from './video-interface.js';
 
 const $ = id => document.getElementById(id);
 let status, user, data, selectedAssignmentId = null, selectedStudentVideoKey = null, pendingUploads = [];
@@ -377,6 +378,21 @@ function allStudentVideoEntries() {
   return studentAssignments().flatMap(studentVideoEntries);
 }
 
+function navigateStudentVideos(direction) {
+  const entries = allStudentVideoEntries();
+  if (entries.length < 2) return;
+  const index = entries.findIndex(item => item.key === selectedStudentVideoKey);
+  const entry = entries[(index + direction + entries.length) % entries.length];
+  void chooseStudentAssignment(entry.assignment, {videoKey: entry.key}).catch(error => message(error.message, true));
+}
+
+const studentVideoInterface = configureVideoInterface({
+  mode: 'student',
+  previousButton: $('previous-student'),
+  nextButton: $('next-student'),
+  onNavigate: navigateStudentVideos,
+});
+
 async function showStudentVideoEntry(entry) {
   const token = ++studentVideoLoadToken;
   if (!entry) { updateStudentVideo(null); return; }
@@ -464,6 +480,7 @@ function renderStudentBreadcrumb() {
 function renderStudentSubmissions() {
   const root = $('student-submissions');
   const entries = allStudentVideoEntries();
+  studentVideoInterface.setNavigationEnabled(entries.length > 1);
   root.replaceChildren();
   for (const entry of entries) {
     const card = document.createElement('div');

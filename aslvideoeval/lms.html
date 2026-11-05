@@ -4,6 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Still · School portal</title>
   <link rel="stylesheet" href="/lms.css">
+  <link rel="stylesheet" href="/video-interface.css">
 </head>
 <body>
   <header><a class="brand" href="/"><b>s.</b> still</a><nav id="nav" hidden><span id="identity"></span><button id="password-button">Change password</button><button id="logout">Sign out</button></nav></header>
@@ -18,8 +19,8 @@
       <div class="student-studio">
         <aside class="student-submission-panel" aria-label="Assignment videos"><h2>Videos</h2><div id="student-submissions" class="student-submissions"></div></aside>
         <section class="student-stage" aria-label="Student video">
-          <div class="student-stage-heading"><div><span class="eyebrow">YOUR ASSIGNMENT</span><h2 id="student-assignment-title">Choose an assignment</h2><p id="student-instructions" class="student-instructions"></p></div><div class="student-stage-actions"><button type="button" class="secondary" disabled>Previous video</button><button type="button" class="secondary" disabled>Next video</button><button id="student-upload" type="button">Upload</button><span id="student-review-status" class="student-status-pill">Ready when you are</span></div></div>
-          <div id="student-video-shell" class="student-video-shell"><video id="student-video" controls playsinline preload="metadata" hidden></video><div id="student-empty" class="student-empty"><div class="student-empty-monogram">s.</div><h2>A little space to watch closely.</h2><p>Upload your assignment video, or choose an existing video from the list.</p></div></div>
+          <div class="student-stage-heading"><div><span class="eyebrow">YOUR ASSIGNMENT</span><h2 id="student-assignment-title">Choose an assignment</h2><p id="student-instructions" class="student-instructions"></p></div><div class="student-stage-actions"><button id="student-upload" type="button">Upload</button><span id="student-review-status" class="student-status-pill">Ready when you are</span></div></div>
+          <div class="student-video-fit"><div class="video-navigation"><button id="previous-student" class="video-nav-button" aria-label="Previous video" aria-keyshortcuts="[" title="Previous video ([)" disabled><span class="video-nav-arrow" aria-hidden="true">←</span><kbd>[</kbd></button><div class="video-viewport"><div id="student-video-shell" class="student-video-shell"><video id="student-video" controls playsinline preload="metadata" hidden></video><div id="student-empty" class="student-empty"><div class="student-empty-monogram">s.</div><h2>A little space to watch closely.</h2><p>Upload your assignment video, or choose an existing video from the list.</p></div></div></div><button id="next-student" class="video-nav-button" aria-label="Next video" aria-keyshortcuts="]" title="Next video (])" disabled><kbd>]</kbd><span class="video-nav-arrow" aria-hidden="true">→</span></button></div></div>
           <div class="student-transport" aria-label="Read-only review controls">
             <div class="student-timeline-label"><span id="student-current-time">00:00</span><span>Teacher review tools are read-only</span><span id="student-duration">00:00</span></div>
             <input id="student-seek" type="range" min="0" max="1" value="0" step="0.01" aria-label="Playback position" disabled>
