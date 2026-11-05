@@ -16,6 +16,7 @@ const videoShell = () => $('video-shell');
 const dialogs = [...document.querySelectorAll('dialog')];
 let showingCorrection = false;
 let state, revision = 0, assets = new Map(), capabilities = {}, history = [];
+let teacherClassTree = null;
 let selectedAsset = null, markedIn = null, markedOut = null, looping = false;
 let editCount = 0, savedCount = 0, saveTimer, saving = null, busy = false;
 let libraryFilter = 'recent', libraryTags = new Set(), libraryTarget = 'correction', previewEntry = null, editEntryId = null, newEntryAsset = null;
@@ -446,6 +447,7 @@ async function folderChildren(path) {
   return (await folderChoices.get(path)).folders;
 }
 async function renderVideoPath() {
+  if (teacherClassTree) {renderTeacherClassPath(); return;}
   if (browserStorage) {renderBrowserVideoPath().catch(error => notify(error.message, true)); return;}
   const box = $('video-path');
   const token = ++pathRenderToken;
@@ -483,6 +485,59 @@ async function renderVideoPath() {
     parent = current.value;
   }
   if (!browserStorage) box.append(openFolderButton());
+}
+function renderTeacherClassPath() {
+  const box = $('video-path');
+  box.replaceChildren();
+  const classes = teacherClassTree.classes || [];
+  const active = classes.find(course => course.units.some(unit => unit.assignments.some(item => item.id === state?.session.assignment_id)));
+  const activeUnit = active?.units.find(unit => unit.assignments.some(item => item.id === state?.session.assignment_id));
+  const select = (label, choices, selected, onChange) => {
+    const control = element('select', 'path-choice');
+    control.setAttribute('aria-label', label);
+    for (const [id, title] of choices) {
+      const option = element('option', '', title);
+      option.value = id;
+      control.append(option);
+    }
+    control.value = selected || '';
+    control.addEventListener('change', () => onChange(control.value));
+    box.append(control);
+  };
+  const join = () => box.append(element('span', 'path-separator', '›'));
+  const changeAssignment = id => {
+    const assignment = state.assignments.find(item => item.id === id);
+    if (!assignment) return;
+    state.session.assignment_id = id;
+    state.session.source_folder = '';
+    state.session.submission_id = state.submissions.find(item => item.assignment_id === id)?.id || null;
+    state.session.feedback_id = null;
+    viewChanged();
+    render();
+  };
+  if (!classes.length) {
+    box.append(element('span', 'muted', 'No classes yet'));
+    return;
+  }
+  const courseChoices = classes.map(course => [course.id, course.name]);
+  const fallbackCourse = classes.find(course => course.units.some(unit => unit.assignments.length)) || classes[0];
+  select('Class', courseChoices, active?.id || fallbackCourse.id, classId => {
+    const course = classes.find(item => item.id === classId);
+    const unit = course?.units.find(item => item.assignments.length);
+    if (unit) changeAssignment(unit.assignments[0].id);
+  });
+  join();
+  const course = active || fallbackCourse;
+  const units = course.units.filter(unit => unit.assignments.length);
+  const fallbackUnit = units[0];
+  select('Unit', units.map(unit => [unit.id, unit.title]), activeUnit?.id || fallbackUnit?.id, unitId => {
+    const unit = units.find(item => item.id === unitId);
+    if (unit?.assignments[0]) changeAssignment(unit.assignments[0].id);
+  });
+  join();
+  const unit = activeUnit || fallbackUnit;
+  const assignments = unit?.assignments || [];
+  select('Assignment', assignments.map(item => [item.id, item.title]), state?.session.assignment_id || assignments[0]?.id, changeAssignment);
 }
 function openFolderButton() {
   const control = button('Open folder', async () => {
@@ -1828,6 +1883,16 @@ async function setupBrowserLibrary() {
   } catch (error) {if (error.name !== 'AbortError') notify(error.message, true);}
 }
 
+async function loadTeacherClassTree() {
+  if (browserStorage) return;
+  try {
+    const status = await fetch('/api/auth/status').then(response => response.ok ? response.json() : null);
+    if (status?.user?.role !== 'teacher') return;
+    const response = await fetch('/api/lms/dashboard');
+    if (response.ok) teacherClassTree = await response.json();
+  } catch (error) {console.warn('Could not load teacher class navigation:', error);}
+}
+
 async function boot() {
   try {
     if (!browserStorage) for (const id of ['classes-link', 'ready-review', 'publish-review']) $(id).hidden = false;
@@ -1841,6 +1906,7 @@ async function boot() {
       $('library-help').textContent = 'Reviews and recordings stay on this computer. Cleanup and physical deletion require the local Python server.';
     }
     let data = await readWorkspace(); state = data.state; revision = data.revision; capabilities = data.capabilities; r2UsesLMS = !!data.r2_hierarchy;
+    await loadTeacherClassTree();
     if (browserStorage) {
       $('reconnect-folder').hidden = !(storage.folders.root && !storage.folders.folder);
       $('download-draft').hidden = !storage.pendingDraft;
