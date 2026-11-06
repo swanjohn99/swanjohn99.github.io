@@ -1,7 +1,20 @@
-const teacherOnlyControlIds = ['export', 'upload-r2', 'track-motion', 'view-tracking', 'view-points'];
+const teacherOnlyControlIds = [
+  'server', 'reconnect-folder', 'download-draft', 'submission-mode', 'controller-status', 'video-folders',
+  'classes-link', 'ready-review', 'publish-review', 'add-feedback', 'export', 'upload-r2',
+  'track-motion', 'view-tracking', 'view-points',
+];
 
 function isEditableTarget(target) {
   return target instanceof Element && !!target.closest('input, textarea, select, [contenteditable=true]');
+}
+
+export function applyVideoMode(mode, root = document) {
+  if (mode !== 'student') return;
+  for (const control of root.querySelectorAll?.('[data-teacher-only]') || []) control.hidden = true;
+  for (const id of teacherOnlyControlIds) {
+    const control = root.getElementById?.(id) || root.querySelector?.(`#${id}`);
+    if (control) control.hidden = true;
+  }
 }
 
 export function configureVideoInterface({
@@ -12,12 +25,7 @@ export function configureVideoInterface({
   canUseShortcut = () => true,
   root = document,
 }) {
-  if (mode === 'student') {
-    for (const id of teacherOnlyControlIds) {
-      const control = root.getElementById?.(id) || root.querySelector?.(`#${id}`);
-      if (control) control.hidden = true;
-    }
-  }
+  applyVideoMode(mode, root);
 
   previousButton.addEventListener('click', () => onNavigate(-1));
   nextButton.addEventListener('click', () => onNavigate(1));
